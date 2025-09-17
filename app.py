@@ -43,7 +43,7 @@ def _role_to_string(r) -> str:
     return str(r)
 
 def _current_role() -> str:
-    """Normalized role as lowercase string: 'employee' | 'manager' | 'hr' | 'admin'."""
+    """Normalized role as UPPERCASE: 'EMPLOYEE'|'MANAGER'|'HR'|'ADMIN'."""
     s = ""
     try:
         if current_user and hasattr(current_user, "role"):
@@ -52,7 +52,7 @@ def _current_role() -> str:
         s = ""
     if not s and has_request_context():
         s = session.get("role", "")
-    return (s or "").strip().lower()
+    return (s or "").strip().upper()
 
 # ----------------- Flask App (create BEFORE routes) -----------------
 app = Flask(__name__)
@@ -88,7 +88,7 @@ app.jinja_env.globals['role_str'] = _role_to_string
 @app.route("/hr/export/csv")
 @login_required
 def hr_export_csv():
-    if get_role(current_user) != "hr":
+    if get_role(current_user) != "HR":
         flash("Access denied.", "danger")
         return redirect(url_for("dashboard_hr"))
 
@@ -114,7 +114,7 @@ def hr_export_csv():
 @app.route("/hr/export/excel")
 @login_required
 def hr_export_excel():
-    if get_role(current_user) != "hr":
+    if get_role(current_user) != "HR":
         flash("Access denied.", "danger")
         return redirect(url_for("dashboard_hr"))
 
@@ -182,7 +182,7 @@ def hr_ui_communicate():
 @app.route("/hr/export/pdf")
 @login_required
 def hr_export_pdf():
-    if get_role(current_user) != "hr":
+    if get_role(current_user) != "HR":
         flash("Access denied.", "danger")
         return redirect(url_for("dashboard_hr"))
 
@@ -305,15 +305,14 @@ model, encoder = load_paired_model_and_encoder()
 
 # === Helper: normalize role safely ===
 def get_role(user):
-    """Normalized role string: 'employee' | 'manager' | 'hr' | 'admin'."""
+    """Normalized role string in UPPERCASE."""
     try:
         val = getattr(user, "role", None)
         if isinstance(val, Role):
-            return str(val.value).lower()
-        return str(val).lower()
+            return (str(val.value) or "").strip().upper()
+        return (str(val) or "").strip().upper()
     except Exception:
         return ""
-
 
 # === Columns (must match training) ===
 CATEGORICAL_COLS = ['JobRole', 'Department', 'MaritalStatus', 'Gender', 'OverTime', 'BusinessTravel', 'EducationField']
@@ -725,13 +724,13 @@ def logout():
 @login_required
 def dashboard():
     role = _current_role()
-    if role == "employee":
+    if role == "EMPLOYEE":
         return redirect(url_for("dashboard_employee"))
-    if role == "manager":
+    if role == "MANAGER":
         return redirect(url_for("dashboard_manager"))
-    if role == "hr":
+    if role == "HR":
         return redirect(url_for("dashboard_hr"))
-    if role == "admin":
+    if role == "ADMIN":
         return redirect(url_for("dashboard_admin"))
     return render_template("dashboard_generic.html")
 
@@ -739,11 +738,11 @@ def dashboard():
 @login_required
 def dashboard_employee():
     role = _current_role()
-    if role == "manager":
+    if role == "MANAGER":
         return redirect(url_for("dashboard_manager"))
-    if role == "hr":
+    if role == "HR":
         return redirect(url_for("dashboard_hr"))
-    if role == "admin":
+    if role == "ADMIN":
         return redirect(url_for("dashboard_admin"))
 
     # 1) Make sure the session isn't stuck in a failed transaction
@@ -820,7 +819,7 @@ def prediction_history():
 @app.route('/dashboard/manager')
 @login_required
 def dashboard_manager():
-    if get_role(current_user) != "manager":
+    if get_role(current_user) != "MANAGER":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_manager"))
 
@@ -897,7 +896,7 @@ def dashboard_hr():
                provide hr_awaiting_count, hr_returned_count, hr_finalized_count,
                hr_overdue_count, hr_queue, recent_appraisals.
     """
-    if get_role(current_user) != "hr":
+    if get_role(current_user) != "HR":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_hr"))
 
@@ -1121,7 +1120,7 @@ def inject_now():
 @app.route('/admin/train_model', methods=['POST'])
 @login_required
 def train_model():
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1187,7 +1186,7 @@ def train_model():
 @app.route('/dashboard/admin')
 @login_required
 def dashboard_admin():
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1252,7 +1251,7 @@ def inject_notifications():
     if current_user.is_authenticated:
         # Example: notifications from predictions or appraisals
         try:
-            if get_role(current_user) in ["manager", "hr"]:
+            if get_role(current_user) in ["MANAGER", "HR"]:
                 # Unseen predictions
                 count = Prediction.query.filter_by(user_id=current_user.id).count()
                 items = Prediction.query.order_by(Prediction.timestamp.desc()).limit(5).all()
@@ -1363,7 +1362,7 @@ def predict_form():
 @app.route('/admin/clear_predictions', methods=['POST'])
 @login_required
 def clear_predictions():
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("dashboard"))
     try:
@@ -1383,7 +1382,7 @@ def delete_prediction(prediction_id):
         pred = Prediction.query.get_or_404(prediction_id)
 
         # Allow only the owner (or admin/HR) to delete
-        if pred.user_id != current_user.id and get_role(current_user) not in ["admin", "hr"]:
+        if pred.user_id != current_user.id and get_role(current_user) not in ["ADMIN", "HR"]:
             flash("You don’t have permission to delete this prediction.", "danger")
             return redirect(url_for('prediction_history'))
 
@@ -1401,7 +1400,7 @@ def delete_prediction(prediction_id):
 @app.route('/admin/create_user', methods=['POST'])
 @login_required
 def create_user():
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1438,7 +1437,7 @@ def create_user():
 @app.route('/admin/approve/<int:user_id>', methods=['POST'])
 @login_required
 def approve_user(user_id):
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1451,7 +1450,7 @@ def approve_user(user_id):
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
 @login_required
 def reject_user(user_id):
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1464,7 +1463,7 @@ def reject_user(user_id):
 @app.route('/admin/reset_password/<int:user_id>', methods=['POST'])
 @login_required
 def reset_user_password(user_id):
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1484,6 +1483,10 @@ from flask import request, flash, redirect, url_for
 @login_required
 # @admin_required  # keep your own guard if you have one
 def delete_user(user_id):
+    if get_role(current_user) != "ADMIN":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home", open="login_admin"))
+
     u = User.query.get_or_404(user_id)
 
     # Count references from appraisals (as employee & as supervisor)
@@ -1528,7 +1531,7 @@ def delete_user(user_id):
 @app.route('/admin/delete_old_models', methods=['POST'])
 @login_required
 def delete_old_models():
-    if get_role(current_user) != "admin":
+    if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
