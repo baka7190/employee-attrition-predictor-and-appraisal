@@ -1,0 +1,8 @@
+<h2>Manager Inbox</h2>
+<ul>
+  {% for x in reviews %}
+    <li>{{ x.employee.username }} ({{ x.period_start }}–{{ x.period_end }})
+      <a href="{{ url_for('reviews.manager_review', review_id=x.id) }}">Open</a>
+    </li>
+  {% else %}<li>No pending items.</li>{% endfor %}
+</ul>

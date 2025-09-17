@@ -1,0 +1,175 @@
+<!-- templates/reviews/self.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Performance Review</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    :root { --brand:#0a2342; --accent:#f9a825; }
+    body { background:#f6f7fb; }
+    .appbar { background: var(--brand); }
+    .brand { color:#fff; font-weight:800; text-decoration:none; }
+    .brand span { color: var(--accent); }
+
+    .card-wrap { max-width: 980px; margin-inline: auto; }
+    .review-card { border:0; border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.08); }
+    .badge-soft {
+      background: rgba(10,35,66,.08);
+      color: #0a2342;
+      border: 1px solid rgba(10,35,66,.15);
+    }
+    .badge-draft { background:#fff3cd; color:#856404; border:1px solid #ffeeba; }
+    .badge-submitted { background:#e7f1ff; color:#084298; border:1px solid #cfe2ff; }
+    .badge-waiting { background:#fff0f6; color:#9c1c58; border:1px solid #ffdeeb; }
+    .badge-complete { background:#e8f5e9; color:#1b5e20; border:1px solid #c8e6c9; }
+
+    .form-help { color:#6b7280; font-size:.9rem; }
+    .sticky-actions {
+      position: sticky; bottom: 0; z-index: 5; background:#fff; border-top:1px solid #e9ecef;
+      padding: .75rem; border-bottom-left-radius:16px; border-bottom-right-radius:16px;
+    }
+    .rating-output {
+      min-width: 2.2rem; text-align:center; display:inline-block;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top App Bar -->
+<nav class="appbar navbar navbar-expand-lg navbar-dark">
+  <div class="container">
+    <a class="brand navbar-brand" href="{{ url_for('dashboard') }}">Attrition<span>Detect</span></a>
+    <div class="ms-auto d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('dashboard') }}">
+        <i class="bi bi-house-door"></i> Dashboard
+      </a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-4 card-wrap">
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% if msgs %}
+      {% for cat, msg in msgs %}
+        <div class="alert alert-{{ 'warning' if cat=='danger' else cat }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Review Card -->
+  <div class="card review-card">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between bg-white p-3"
+         style="border-top-left-radius:16px;border-top-right-radius:16px;">
+      <div>
+        <h5 class="mb-1 fw-bold">
+          My Review
+          <small class="text-muted">
+            ({{ review.period_start.strftime("%b %d, %Y") }} – {{ review.period_end.strftime("%b %d, %Y") }})
+          </small>
+        </h5>
+        <div class="form-help">
+          Complete your self-evaluation below. You can save as draft and return later.
+          Once submitted to your manager, edits may be restricted.
+        </div>
+      </div>
+
+      <!-- Status badge -->
+      {% set s = (review.status.name if review.status is not string else review.status) %}
+      {% set badge_class = 'badge-soft' %}
+      {% if s in ['DRAFT'] %}{% set badge_class = 'badge-draft' %}
+      {% elif s in ['SUBMITTED_TO_MANAGER','SUBMITTED_TO_HR'] %}{% set badge_class = 'badge-submitted' %}
+      {% elif s in ['WAITING_ON_HR'] %}{% set badge_class = 'badge-waiting' %}
+      {% elif s in ['COMPLETE'] %}{% set badge_class = 'badge-complete' %}{% endif %}
+
+      <span class="badge {{ badge_class }} px-3 py-2 text-uppercase fw-semibold">
+        Status: {{ s.replace('_',' ') }}
+      </span>
+    </div>
+
+    <form method="POST" action="{{ url_for('reviews.self_review', review_id=review.id) }}" novalidate>
+      <div class="card-body p-4">
+
+        <!-- Goals -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Goals <span class="text-muted">(What did you plan to achieve?)</span></label>
+          <textarea class="form-control" name="goals" rows="4" placeholder="Describe your key goals for this period…"
+                    required>{{ review.self_goals or '' }}</textarea>
+          <div class="form-help mt-1">
+            Tip: Focus on measurable objectives and the business outcomes you targeted.
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Achievements <span class="text-muted">(What did you accomplish?)</span></label>
+          <textarea class="form-control" name="achievements" rows="4" placeholder="Highlight your impact, results, and milestones…"
+                    required>{{ review.self_achievements or '' }}</textarea>
+          <div class="form-help mt-1">
+            Include numbers where possible (e.g., reduced processing time by 30%).
+          </div>
+        </div>
+
+        <!-- Training -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Training & Development</label>
+          <textarea class="form-control" name="training" rows="3" placeholder="Courses, workshops, certifications, mentoring…">{{ review.self_training or '' }}</textarea>
+        </div>
+
+        <!-- Self Rating -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Self Rating (1–5)</label>
+            <div class="d-flex align-items-center gap-3">
+              <input type="range" class="form-range" min="1" max="5" step="1" name="self_rating"
+                     value="{{ review.self_rating or 3 }}" id="ratingRange"
+                     oninput="document.getElementById('ratingOut').textContent=this.value">
+              <span class="rating-output badge text-bg-secondary" id="ratingOut">{{ review.self_rating or 3 }}</span>
+            </div>
+            <div class="form-help mt-1">1 = Needs Improvement, 3 = Meets Expectations, 5 = Outstanding</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Actions (sticky footer in the card) -->
+      <div class="sticky-actions d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="text-muted">
+          Review ID: #{{ review.id }}
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" name="action" value="save" class="btn btn-outline-secondary">
+            <i class="bi bi-save"></i> Save Draft
+          </button>
+          <button type="submit" name="action" value="submit" class="btn btn-warning text-dark fw-semibold">
+            <i class="bi bi-send"></i> Submit to Manager
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Helpful links -->
+  <div class="text-center mt-3">
+    <a href="{{ url_for('dashboard') }}" class="link-secondary text-decoration-none">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

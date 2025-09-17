@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+{% block title %}HR Dashboard — People & Performance{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+  /* ====== THEME (professional, minimal) ====== */
+  :root{
+    --bg: #f7f9fc;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #6b7280;
+    --line: #e6eaf2;
+    --primary: #2563eb;  /* blue */
+    --success: #16a34a;  /* green */
+    --warning: #f59e0b;  /* amber */
+    --danger: #ef4444;   /* red */
+    --shadow: 0 10px 30px rgba(15, 23, 42, .06);
+    --radius: 16px;
+  }
+
+  html, body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
+  body{ background: var(--bg); color: var(--ink); }
+  .wrap{ max-width: 1280px; margin: 0 auto; padding: 16px; }
+
+  /* ====== HERO ====== */
+  .hero{
+    background: linear-gradient(180deg,#fff,rgba(255,255,255,.96));
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 24px;
+    position: sticky; top: 0; z-index: 5; /* keeps quick actions at hand */
+  }
+  .hero h1{ font-weight: 800; letter-spacing:.2px; margin: 0; color: var(--ink); }
+  .hero .sub{ color: var(--muted); }
+  .hero .actions .btn{ border-radius: 12px; }
+  .hero .quick-nav{
+    display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
+  }
+  .chip{ display:inline-flex; align-items:center; gap:8px; padding:.5rem .9rem; border:1px solid var(--line); background:#fff; border-radius:999px; color:#1f2937; font-weight:600; text-decoration:none; }
+  .chip:hover{ background:#f0f4ff; border-color:#dbe3ff; color:#1e3a8a; }
+  .chip.active{ background:#eaf1ff; border-color:#cddcff; color:#1d4ed8; }
+
+  /* ====== LAYOUT ====== */
+  section{ margin-top: 16px; }
+  .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem; }
+  .section-head h2{ font-size:1.05rem; text-transform:uppercase; letter-spacing:.08em; color:#475569; margin:0; }
+
+  .grid{ display:grid; gap: 12px; }
+  .grid.cols-2{ grid-template-columns: 2fr 1fr; }
+  .grid.cols-1-2{ grid-template-columns: 1fr 2fr; }
+  .grid.cols-2-even{ grid-template-columns: 1fr 1fr; }
+  .grid.cols-4{ grid-template-columns: repeat(4, 1fr); }
+  .grid.kpis{ grid-template-columns: repeat(12, 1fr); }
+  .grid.kpis > .col{ grid-column: span 3; }
+
+  @media (max-width: 1200px){
+    .grid.cols-2, .grid.cols-1-2{ grid-template-columns: 1fr; }
+  }
+  @media (max-width: 992px){
+    .grid.kpis > .col{ grid-column: span 6; }
+  }
+  @media (max-width: 576px){
+    .grid.kpis > .col{ grid-column: span 12; }
+    .grid.cols-2-even{ grid-template-columns: 1fr; }
+  }
+
+  /* ====== CARDS ====== */
+  .card-pro{ background: var(--card); border:1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card-pro .head{
+    padding:12px 16px; border-bottom:1px solid var(--line); font-weight:700; color:#374151;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-pro .body{ padding: 12px; }
+
+  /* ====== KPIs ====== */
+  .kpi{ display:flex; gap:12px; align-items:center; padding:14px; }
+  .kpi .icon{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+  .kpi .label{ font-size:.9rem; color:#6b7280; }
+  .kpi .value{ font-size:1.75rem; font-weight:800; line-height:1; color:#111827; }
+  .progress.thin{ height:6px; border-radius:999px; background:#f1f5f9; overflow:hidden; }
+  .progress.thin .bar{ height:100%; border-radius:999px; }
+
+  /* ====== TABLES ====== */
+  .table>:not(caption)>*>*{ padding:.6rem .7rem; }
+  .table thead th{ font-weight:700; color:#6b7280; border-bottom:1px solid var(--line); }
+  .soft{ color: var(--muted); }
+
+  /* ====== CHARTS ====== */
+  canvas.hr-chart{ height: 280px !important; max-height: 280px; width: 100% !important; }
+
+  /* ====== UTIL ====== */
+  .reveal{ opacity:0; transform: translateY(10px); transition: all .45s ease; }
+  .reveal.show{ opacity:1; transform: none; }
+
+  /* Collapsible action grid */
+  .collapsible { overflow: hidden; transition: grid-template-rows .3s ease, height .3s ease; }
+  .collapsible[aria-expanded="false"] .content { display:none; }
+  .collapsible-toggle{ display:inline-flex; align-items:center; gap:8px; font-weight:600; }
+</style>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero mb-2">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h1>HR Dashboard — People &amp; Performance</h1>
+        <div class="sub">Attrition first, appraisals next — the essentials up front.</div>
+      </div>
+      <div class="actions d-flex gap-2">
+        <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm"><i class="bi bi-graph-up"></i> Make a Prediction</a>
+        <a class="btn btn-outline-success btn-sm" data-bs-toggle="offcanvas" data-bs-target="#csvCanvas"><i class="bi bi-file-earmark-spreadsheet"></i> Batch Upload</a>
+      </div>
+    </div>
+    <div class="quick-nav" id="navChips">
+      <a class="chip" href="#attrition">Attrition</a>
+      <a class="chip" href="#appraisals">Appraisals</a>
+      <a class="chip" href="#other">Other Insights</a>
+    </div>
+  </div>
+
+  <!-- ===================== ATTRITION (TOP PRIORITY) ===================== -->
+  <section id="attrition" class="reveal">
+    <div class="section-head"><h2>Attrition · People Insights</h2></div>
+
+    <!-- Optional top-row KPIs (kept minimal, focused on attrition signal) -->
+    <div class="grid kpis">
+      <div class="col">
+        <div class="card-pro kpi">
+          <div class="icon bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon-fill"></i></div>
+          <div class="w-100">
+            <div class="label">Attrition Risk</div>
+            <div class="value">{{ (yes_rate|default(0)|float)|round(1) }}%</div>
+            <div class="progress thin mt-2">
+              <div class="bar"
+                style="width: {{ yes_rate|default(0) }}%;
+                       background: {{ 'var(--danger)' if (yes_rate|default(0))>=40 else ('var(--warning)' if (yes_rate|default(0))>=20 else 'var(--success)') }};">
+              </div>
+            </div>
+            <div class="soft small mt-1">Yes-rate across {{ total_predictions|default(0) }} predictions</div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card-pro kpi">
+          <div class="icon bg-primary-subtle text-primary"><i class="bi bi-people-fill"></i></div>
+          <div class="w-100">
+            <div class="label">Total Employees</div>
+            <div class="value">{{ total_employees|default(0) }}</div>
+            <div class="progress thin mt-2"><div class="bar" style="width:100%; background:var(--primary)"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card-pro kpi">
+          <div class="icon bg-secondary-subtle text-secondary"><i class="bi bi-clipboard-data"></i></div>
+          <div class="w-100">
+            <div class="label">Total Appraisals</div>
+            <div class="value">{{ total_appraisals|default(0) }}</div>
+            <div class="progress thin mt-2"><div class="bar" style="width:100%; background:#64748b"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card-pro kpi">
+          <div class="icon bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></div>
+          <div class="w-100">
+            <div class="label">Finalized Appraisals</div>
+            <div class="value">{{ hr_finalized_count|default(0) }}</div>
+            <div class="progress thin mt-2"><div class="bar" style="width:100%; background:var(--success)"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts: trend + dept -->
+    <div class="grid cols-2 mt-2">
+      <div class="card-pro">
+        <div class="head">Risk &amp; Confidence Over Time</div>
+        <div class="body">
+          <canvas id="trendChart" class="hr-chart"></canvas>
+          <div class="soft small mt-2">Average predicted risk (%) per day.</div>
+        </div>
+      </div>
+      <div class="card-pro">
+        <div class="head">Risk by Department</div>
+        <div class="body"><canvas id="deptChart" class="hr-chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts: OT + Tenure -->
+    <div class="grid cols-2-even mt-2">
+      <div class="card-pro">
+        <div class="head">Risk vs OverTime</div>
+        <div class="body"><canvas id="otChart" class="hr-chart"></canvas></div>
+      </div>
+      <div class="card-pro">
+        <div class="head">Risk by Tenure</div>
+        <div class="body">
+          <canvas id="tenureChart" class="hr-chart"></canvas>
+          <div class="soft small mt-2">Yes-rate by years at company.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent predictions table — full width, always visible -->
+    <div class="card-pro mt-2">
+      <div class="head">Recent Team Predictions</div>
+      <div class="body">
+        {% if recent_rows %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr><th>Time</th><th>Result</th><th>Confidence</th><th>Department</th><th>Job Role</th><th>OverTime</th><th>Years @ Co.</th></tr>
+              </thead>
+              <tbody>
+                {% for r in recent_rows %}
+                <tr>
+                  <td class="text-nowrap">{{ r.ts }}</td>
+                  <td>
+                    <span class="badge rounded-pill text-bg-{{ 'danger' if r.result and r.result|lower=='yes' else 'success' }}">
+                      {{ r.result or 'N/A' }}
+                    </span>
+                  </td>
+                  <td>{{ r.proba }}</td>
+                  <td>{{ r.dept }}</td>
+                  <td>{{ r.role }}</td>
+                  <td>{{ r.ot }}</td>
+                  <td>{{ r.years }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="soft">No predictions available yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== APPRAISALS & OPS (SECOND) ===================== -->
+  <section id="appraisals" class="reveal">
+    <div class="section-head"><h2>Appraisals · HR Operations</h2></div>
+
+    <!-- KPI cards -->
+    <div class="grid kpis">
+      <div class="col"><div class="card-pro kpi"><div class="icon bg-info-subtle text-info"><i class="bi bi-send-check"></i></div><div><div class="label">Awaiting HR Review</div><div class="value">{{ hr_awaiting_count|default(0) }}</div></div></div></div>
+      <div class="col"><div class="card-pro kpi"><div class="icon bg-secondary-subtle text-secondary"><i class="bi bi-arrow-counterclockwise"></i></div><div><div class="label">Returned</div><div class="value">{{ hr_returned_count|default(0) }}</div></div></div></div>
+      <div class="col"><div class="card-pro kpi"><div class="icon bg-success-subtle text-success"><i class="bi bi-patch-check-fill"></i></div><div><div class="label">Finalized</div><div class="value">{{ hr_finalized_count|default(0) }}</div></div></div></div>
+      <div class="col"><div class="card-pro kpi"><div class="icon bg-warning-subtle text-warning"><i class="bi bi-clock-history"></i></div><div><div class="label">Overdue</div><div class="value">{{ hr_overdue_count|default(0) }}</div></div></div></div>
+    </div>
+
+    <!-- HR Actions (collapsible to reduce clutter) -->
+    <div class="card-pro mt-2">
+      <div class="head">
+        <span>Appraisal: HR Actions</span>
+        <button class="btn btn-sm btn-outline-secondary collapsible-toggle" type="button" data-target="#hrActions">
+          <i class="bi bi-sliders"></i> Toggle Actions
+        </button>
+      </div>
+      <div id="hrActions" class="body">
+        <div class="row g-2">
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.criteria_ui') }}">Define Criteria</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.new_cycle') }}">Launch Cycle</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.assign_reviewers_ui') }}">Assign Reviewers</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.progress_ui') }}">Monitor Progress</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.hr_review_queue_ui') }}">HR Review</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.hr_review_queue_ui') }}">Approve / Reject</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.calibrate_ui') }}">Calibrate Ratings</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.communicate_ui') }}">Communicate Outcomes</a></div>
+          <div class="col-12 col-md-6 col-xl-4"><a class="btn w-100 btn-outline-secondary" href="{{ url_for('appraisal.hr_export_excel') }}">Export &amp; Archive</a></div>
+        </div>
+        <div class="soft small mt-2">
+          Workflow: <span class="badge text-bg-secondary">DRAFT</span>
+          <span class="badge text-bg-secondary">SUBMITTED_TO_MANAGER</span>
+          <span class="badge text-bg-secondary">MANAGER_SUBMITTED</span>
+          <span class="badge text-bg-secondary">HR_REVIEWED</span>
+          <span class="badge text-bg-success">APPROVED</span>
+          <span class="badge text-bg-danger">REJECTED</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status & Queue -->
+    <div class="grid cols-1-2 mt-2">
+      <div class="card-pro">
+        <div class="head">Appraisal Status</div>
+        <div class="body">
+          <canvas id="statusChart" class="hr-chart"></canvas>
+          <div class="soft small mt-2">Distribution of performance reviews.</div>
+        </div>
+      </div>
+      <div class="card-pro">
+        <div class="head">HR Review Queue</div>
+        <div class="body">
+          {% set queue = hr_queue or [] %}
+          {% if queue %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead><tr><th>#</th><th>Employee</th><th>Manager</th><th>Period</th><th>Status</th><th>Score</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                  {% for q in queue[:12] %}
+                  <tr>
+                    <td class="text-muted">#{{ q.id }}</td>
+                    <td>{{ q.employee_name or ('ID ' ~ q.employee_id) }}</td>
+                    <td>{{ q.manager_name or ('ID ' ~ q.manager_id) }}</td>
+                    <td>{{ q.period_start }} → {{ q.period_end }}</td>
+                    <td><span class="badge text-bg-secondary">{{ q.status or 'MANAGER_SUBMITTED' }}</span></td>
+                    <td>{{ q.total_score or '—' }}</td>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm">
+                        <a class="btn btn-outline-primary" href="{{ q.review_url or url_for('appraisal.hr_review_queue_ui') }}">Open</a>
+                        <a class="btn btn-outline-warning" href="{{ q.return_url or url_for('appraisal.hr_review_queue_ui') }}">Return</a>
+                        <a class="btn btn-success" href="{{ q.finalize_url or url_for('appraisal.hr_review_queue_ui') }}">Finalize</a>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="soft">No items awaiting HR review.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress & Finalized -->
+    <div class="grid cols-2-even mt-2">
+      <div class="card-pro">
+        <div class="head">Cycle Progress by Department</div>
+        <div class="body">
+          {% if dept_progress %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead><tr><th>Department</th><th>Draft</th><th>Manager Submitted</th><th>HR Reviewed</th><th>Approved</th><th>Rejected</th></tr></thead>
+                <tbody>
+                  {% for d in dept_progress %}
+                  <tr>
+                    <td>{{ d.name }}</td>
+                    <td>{{ d.draft or 0 }}</td>
+                    <td>{{ d.manager_submitted or 0 }}</td>
+                    <td>{{ d.hr_reviewed or 0 }}</td>
+                    <td>{{ d.approved or 0 }}</td>
+                    <td>{{ d.rejected or 0 }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="soft">No progress data yet.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-pro">
+        <div class="head">Recent Finalized Appraisals</div>
+        <div class="body">
+          {% if recent_appraisals %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead><tr><th>#</th><th>Employee</th><th>Period</th><th>Score</th><th>Finalized</th></tr></thead>
+                <tbody>
+                  {% for a in recent_appraisals[:12] %}
+                  <tr>
+                    <td class="text-muted">#{{ a.id }}</td>
+                    <td>{{ a.employee_name or ('ID ' ~ a.employee_id) }}</td>
+                    <td>{{ a.period_start }} → {{ a.period_end }}</td>
+                    <td class="fw-semibold">{{ a.total_score or '—' }}</td>
+                    <td>{{ a.finalized_at or '—' }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="soft">No finalized appraisals yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="card-pro mt-2">
+      <div class="head">
+        <span>Reports</span>
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-danger btn-sm"   href="{{ url_for('appraisal.hr_export_pdf') }}">Export PDF</a>
+          <a class="btn btn-outline-success btn-sm"  href="{{ url_for('appraisal.hr_export_excel') }}">Export Excel</a>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('appraisal.hr_export_csv') }}">Export CSV</a>
+        </div>
+      </div>
+      <div class="body soft">Exports for sharing &amp; audit.</div>
+    </div>
+  </section>
+
+  <!-- ===================== OTHER INSIGHTS (COLLAPSIBLE) ===================== -->
+  <section id="other" class="reveal">
+    <div class="section-head"><h2>Other Insights</h2></div>
+
+    <div class="accordion" id="insightsAccordion">
+      <!-- Attendance -->
+      <div class="accordion-item card-pro" style="overflow:hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#attCollapse">
+            Attendance
+          </button>
+        </h2>
+        <div id="attCollapse" class="accordion-collapse collapse show" data-bs-parent="#insightsAccordion">
+          <div class="accordion-body">
+            <div class="grid cols-2">
+              <div class="card-pro"><div class="head">Attendance Trend</div><div class="body"><canvas id="chart-attendance-trend" class="hr-chart"></canvas></div></div>
+              <div class="card-pro"><div class="head">Absenteeism by Dept</div><div class="body"><canvas id="chart-absenteeism-dept" class="hr-chart"></canvas></div></div>
+            </div>
+            <div class="card-pro mt-2"><div class="head">Attendance Table</div><div class="body"><div id="table-attendance"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recruitment -->
+      <div class="accordion-item card-pro mt-2" style="overflow:hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#recCollapse">
+            Recruitment
+          </button>
+        </h2>
+        <div id="recCollapse" class="accordion-collapse collapse" data-bs-parent="#insightsAccordion">
+          <div class="accordion-body">
+            <div class="grid cols-2-even">
+              <div class="card-pro"><div class="head">Recruitment Funnel</div><div class="body"><canvas id="chart-recruitment-funnel" class="hr-chart"></canvas></div></div>
+              <div class="card-pro"><div class="head">Time to Hire</div><div class="body"><canvas id="chart-time-to-hire" class="hr-chart"></canvas></div></div>
+            </div>
+            <div class="card-pro mt-2"><div class="head">Open Requisitions</div><div class="body"><div id="table-requisitions"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engagement -->
+      <div class="accordion-item card-pro mt-2" style="overflow:hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#engCollapse">
+            Engagement
+          </button>
+        </h2>
+        <div id="engCollapse" class="accordion-collapse collapse" data-bs-parent="#insightsAccordion">
+          <div class="accordion-body">
+            <div class="grid cols-2-even">
+              <div class="card-pro"><div class="head">Engagement Index</div><div class="body"><canvas id="chart-engagement-index" class="hr-chart"></canvas></div></div>
+              <div class="card-pro"><div class="head">eNPS</div><div class="body"><canvas id="chart-enps" class="hr-chart"></canvas></div></div>
+            </div>
+            <div class="card-pro mt-2"><div class="head">Survey Comments</div><div class="body"><div id="table-engagement-comments"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="text-center soft small my-3">Last updated {{ current_year }}</div>
+</div>
+
+<!-- Offcanvas: Batch Prediction (unchanged) -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="csvCanvas" style="width:460px">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title"><i class="bi bi-file-earmark-spreadsheet"></i> Batch Prediction</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data" class="card-pro p-3">
+      <div class="mb-3">
+        <label class="form-label">Upload CSV/Excel</label>
+        <input type="file" class="form-control" name="file" required>
+      </div>
+      <button class="btn btn-success w-100"><i class="bi bi-upload"></i> Predict from File</button>
+    </form>
+    <p class="soft mt-3">Ensure your columns match the fields used by the model.</p>
+  </div>
+</div>
+
+<script>
+  // ------- Chart data from backend (unchanged) -------
+  const trendDates   = {{ (trend_dates|default([]))|tojson }};
+  const trendAvg     = {{ (trend_avg|default([]))|tojson }};
+  const statusLabels = {{ (status_labels|default([]))|tojson }};
+  const statusCounts = {{ (status_counts|default([]))|tojson }};
+  const deptLabels   = {{ (dept_labels|default([]))|tojson }};
+  const deptRates    = {{ (dept_rates|default([]))|tojson }};
+  const otLabels     = {{ (ot_labels|default([]))|tojson }};
+  const otRates      = {{ (ot_rates|default([]))|tojson }};
+  const tenureLabels = {{ (tenure_labels|default([]))|tojson }};
+  const tenureRates  = {{ (tenure_rates|default([]))|tojson }};
+
+  function makeChart(id, cfg){
+    if (!document.getElementById(id)) return;
+    if (Chart.getChart){ const prev = Chart.getChart(id); if (prev) prev.destroy(); }
+    return new Chart(document.getElementById(id), cfg);
+  }
+
+  // Trim long timelines
+  const MAX_POINTS=60, si=Math.max(0,(trendDates||[]).length-MAX_POINTS);
+  const tDates=(trendDates||[]).slice(si), tAvg=(trendAvg||[]).slice(si);
+
+  // Attrition charts
+  makeChart('trendChart',{type:'line',data:{labels:tDates,datasets:[{label:'Avg Risk (%)',data:tAvg,tension:.35,fill:false}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},scales:{x:{ticks:{maxRotation:0,autoSkip:true}},y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
+  makeChart('deptChart',{type:'bar',data:{labels:deptLabels,datasets:[{label:'Yes Rate (%)',data:deptRates,borderRadius:8,maxBarThickness:56}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
+  makeChart('otChart',{type:'bar',data:{labels:otLabels,datasets:[{label:'Yes Rate (%)',data:otRates,borderRadius:8,maxBarThickness:56}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
+  makeChart('tenureChart',{type:'polarArea',data:{labels:tenureLabels,datasets:[{data:tenureRates}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'bottom'}},scales:{r:{ticks:{callback:v=>v+'%'}}}}});
+  makeChart('statusChart',{type:'doughnut',data:{labels:statusLabels,datasets:[{data:statusCounts,cutout:'60%',radius:'80%'}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'bottom'}}}});
+
+  // ------- Reveal-on-scroll + active chip -------
+  const reveals = document.querySelectorAll('.reveal');
+  const chips = Array.from(document.querySelectorAll('#navChips .chip'));
+  const sections = ['attrition','appraisals','other'].map(id=>document.getElementById(id));
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if (e.isIntersecting) e.target.classList.add('show'); });
+  }, { rootMargin: '0px 0px -15% 0px', threshold: .15 });
+  reveals.forEach(el=>io.observe(el));
+
+  const spy = new IntersectionObserver((entries)=>{
+    const visible = entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio);
+    if (!visible.length) return;
+    const id = visible[0].target.id;
+    chips.forEach(c=>c.classList.toggle('active', c.getAttribute('href')==='#'+id));
+  }, { threshold: .5 });
+  sections.forEach(s=>s && spy.observe(s));
+
+  // Collapsible HR actions
+  document.querySelectorAll('.collapsible-toggle').forEach(btn=>{
+    const target = document.querySelector(btn.dataset.target);
+    if(!target) return;
+    btn.addEventListener('click', ()=> target.classList.toggle('d-none'));
+  });
+</script>
+{% endblock %}

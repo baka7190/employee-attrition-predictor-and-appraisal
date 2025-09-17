@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prediction History</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    body { background:#f8fafc; }
+    .card-history { border:1px solid #e5e7eb; border-radius:1rem; box-shadow:0 6px 18px rgba(0,0,0,.05); }
+    .accordion-button { border-radius:1rem !important; }
+    .badge-yes { background:#dc2626; }  /* red */
+    .badge-no  { background:#16a34a; }  /* green */
+  </style>
+</head>
+<body>
+
+<div class="container py-5">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">My Prediction History</h2>
+    <div class="d-flex gap-2">
+      {% if predictions %}
+      <form method="POST" action="{{ url_for('clear_predictions') }}" onsubmit="return confirm('Clear all history?');">
+        <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
+      </form>
+      {% endif %}
+      <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> New Prediction</a>
+    </div>
+  </div>
+
+  {% if predictions %}
+  <div class="accordion" id="historyAccordion">
+    {% for pred in predictions %}
+    <div class="accordion-item card-history mb-3">
+      <h2 class="accordion-header" id="heading{{ loop.index }}">
+        <button class="accordion-button collapsed d-flex justify-content-between align-items-center" type="button"
+                data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+          <div>
+            <span class="badge {% if pred.result|lower == 'yes' %}badge-yes{% else %}badge-no{% endif %} me-2">
+              {{ pred.result }}
+            </span>
+            <small class="text-muted">Confidence: {{ pred.confidence }}</small>
+          </div>
+          <span class="small text-muted">{{ pred.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</span>
+        </button>
+      </h2>
+      <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#historyAccordion">
+        <div class="accordion-body">
+          {% if pred.input_data %}
+          <h6 class="fw-semibold">Employee Input Data</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle">
+              <thead class="table-light">
+                <tr><th>Feature</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                {% for key, value in pred.input_data.items() %}
+                <tr>
+                  <td class="text-muted small">{{ key }}</td>
+                  <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p class="text-muted fst-italic">No input data available.</p>
+          {% endif %}
+
+          <!-- Delete single history -->
+          <form method="POST" action="{{ url_for('delete_prediction', prediction_id=pred.id) }}"
+                onsubmit="return confirm('Delete this record?');" class="mt-2">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i> Delete</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Export buttons -->
+  <div class="d-flex justify-content-end gap-2 mt-4">
+    <a class="btn btn-outline-success btn-sm" href="{{ url_for('hr_export_excel') }}"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+    <a class="btn btn-outline-danger btn-sm" href="{{ url_for('hr_export_pdf') }}"><i class="bi bi-filetype-pdf"></i> Export PDF</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('hr_export_csv') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+  </div>
+
+  {% else %}
+    <div class="alert alert-info text-center shadow-sm">
+      <i class="bi bi-info-circle"></i> No predictions found yet.
+    </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

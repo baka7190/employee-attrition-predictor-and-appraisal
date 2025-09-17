@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Define Criteria{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h3 class="mb-3">Criteria Library</h3>
+
+  <!-- Add new criterion -->
+  <form method="POST"
+        action="{{ url_for('appraisal.criteria_ui') }}"
+        class="row g-2 mb-3">
+    <input type="hidden" name="action" value="add">
+    <div class="col-auto">
+      <select class="form-select" name="type" required>
+        <option value="" disabled selected>Type</option>
+        <option value="Duty">Duty</option>
+        <option value="Skill">Skill</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <input class="form-control" type="text" name="name" placeholder="Criterion name" required>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary">Add Criterion</button>
+    </div>
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+  </form>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table table-striped mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:80px;">ID</th>
+            <th style="width:180px;">Type</th>
+            <th>Name</th>
+            <th style="width:140px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if criteria %}
+            {% for c in criteria %}
+            <tr>
+              <td>{{ c.id }}</td>
+              <td>{{ c.type }}</td>
+              <td>{{ c.name }}</td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('appraisal.criteria_ui') }}"
+                      style="display:inline"
+                      onsubmit="return confirm('Delete this criterion?');">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="criteria_id" value="{{ c.id }}">
+                  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">No criteria found.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+  body { background: #f9fafb; }
+  .page-full { width: 100%; padding: 0 1rem; }
+  .result-card {
+    max-width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(16,24,40,.08);
+    background: #fff;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .badge-lg {
+    font-size: 1rem;
+    padding: .5rem 1rem;
+    border-radius: 999px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-full">
+
+  <!-- Prediction Result -->
+  <div class="result-card text-center">
+    <h6 class="text-muted">PREDICTION RESULT</h6>
+    <h2 class="fw-bold mb-2">Attrition Level</h2>
+    <span class="badge badge-lg {% if risk_label == 'High' %}bg-danger{% elif risk_label == 'Moderate' %}bg-warning{% else %}bg-success{% endif %}">
+      {{ risk_label }}
+    </span>
+    <p class="mt-2">{{ prediction_text }}</p>
+
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <div class="p-3 bg-light rounded">
+          <div class="small text-muted">Attrition probability</div>
+          <div class="fw-bold fs-4">{{ (proba*100)|round(1) }}%</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="p-3 bg-light rounded">
+          <div class="small text-muted">Confidence level</div>
+          <div class="fw-bold fs-4">100%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+      <!-- Recommendations: scroll -->
+      <a href="#recommendations-section" class="btn btn-outline-secondary">
+        <i class="bi bi-list"></i> Recommendations
+      </a>
+
+      <!-- Explain: modal -->
+      <a href="#" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#explainModal">
+        <i class="bi bi-search"></i> Explain
+      </a>
+
+      <!-- Start plan: retention plan modal -->
+      <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#planModal">
+        <i class="bi bi-people"></i> Start plan
+      </a>
+
+      <!-- New prediction -->
+      <a href="{{ url_for('predict') }}" class="btn btn-primary">
+        <i class="bi bi-arrow-repeat"></i> New prediction
+      </a>
+    </div>
+    <div class="small subtle mt-3">Model: Logistic Regression</div>
+  </div>
+
+  <!-- Recommendations Section -->
+  <div id="recommendations-section" class="result-card">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5><i class="bi bi-bar-chart me-1"></i> Recommended actions</h5>
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-secondary" onclick="copyText()">Copy</button>
+        <button class="btn btn-outline-danger" onclick="window.print()">PDF</button>
+      </div>
+    </div>
+    <ul class="list-group list-group-flush mt-3">
+      {% for r in recommendations %}
+        <li class="list-group-item">{{ r }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<!-- Explain Modal -->
+<div class="modal fade" id="explainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-search"></i> Explanation of Prediction</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        {% if top_drivers %}
+        <ul class="list-group">
+          {% for d in top_drivers %}
+            <li class="list-group-item d-flex justify-content-between">
+              <span>{{ d.name }} <span class="text-muted small">({{ d.direction }})</span></span>
+              <span class="fw-bold">{{ d.value }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-muted">No explanation available.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Retention Plan Modal -->
+<div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-people"></i> Retention Plan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('save_retention_plan') }}">
+        <div class="modal-body">
+          <input type="hidden" name="user_id" value="{{ current_user.id }}">
+          <div class="mb-3">
+            <label class="form-label">Immediate Actions</label>
+            <textarea class="form-control" name="immediate_plan" rows="3" required>
+{% for r in recommendations %}- {{ r }}
+{% endfor %}
+            </textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Next Steps</label>
+            <textarea class="form-control" name="next_steps" rows="3" placeholder="E.g. review after 30 days..."></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Assigned HR/Manager</label>
+            <input type="text" class="form-control" name="assigned_to" value="{{ current_user.username }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  function copyText() {
+    const text = Array.from(document.querySelectorAll('#recommendations-section li'))
+      .map(li => li.innerText).join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      alert("✅ Recommendations copied to clipboard!");
+    });
+  }
+</script>
+{% endblock %}

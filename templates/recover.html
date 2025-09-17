@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+  :root{ --indigo:#4f46e5; --cyan:#06b6d4; --slate:#64748b; --ring:#e5e7eb; }
+  body{ background: radial-gradient(1000px 520px at -10% -20%, rgba(79,70,229,.08), transparent 60%),
+                     radial-gradient(900px 480px at 110% -10%, rgba(6,182,212,.08), transparent 55%),
+                     linear-gradient(180deg,#f8fafc,#fff); }
+  .auth-wrap{ min-height: calc(100vh - 140px); display:flex; align-items:center; justify-content:center; }
+  .glass-card{
+    width:min(560px, 94vw);
+    border:1px solid var(--ring);
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 24px 64px rgba(15,23,42,.12);
+    overflow:hidden;
+  }
+  .card-head{
+    background:linear-gradient(135deg, var(--indigo), var(--cyan));
+    color:#fff; padding:18px 24px;
+    display:flex; align-items:center; gap:.75rem;
+  }
+  .card-head .badge-pill{
+    background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25);
+    padding:.2rem .55rem; border-radius:999px; font-size:.75rem; font-weight:600;
+  }
+  .card-body{ padding:22px; }
+  .helper{ color:var(--slate); font-size:.9rem; }
+  .form-control{ height:46px; }
+  .is-invalid{ border-color:#dc3545 !important; }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--indigo), var(--cyan));
+    border: none;
+  }
+  .btn-primary:disabled{ opacity:.85; }
+  .link-muted{ color:var(--slate); text-decoration:none; }
+  .link-muted:hover{ text-decoration:underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap py-4">
+  <div class="glass-card">
+
+    <!-- Header -->
+    <div class="card-head">
+      <div class="d-inline-flex align-items-center justify-content-center bg-white text-dark rounded-3"
+           style="width:34px;height:34px; opacity:.95;">
+        <i class="bi bi-shield-lock-fill"></i>
+      </div>
+      <div class="flex-grow-1">
+        <div class="fw-bold">Password Recovery</div>
+        <div class="badge-pill">Secure reset · Link valid for 1 hour</div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="card-body">
+      <p class="helper mb-3">
+        Enter the email associated with your account. We’ll email you a reset link if it exists in our system.
+      </p>
+
+      <form method="POST" action="{{ url_for('recover') }}" id="recoverForm" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Registered Email</label>
+          <input type="email" class="form-control" id="email" name="email"
+                 placeholder="you@university.edu" autocomplete="email" required>
+          <div class="invalid-feedback">Please enter a valid email address.</div>
+        </div>
+
+        <button class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center" id="submitBtn">
+          <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+          <span class="btn-text">Send Reset Link</span>
+        </button>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <a href="{{ url_for('home', open='login') }}" class="link-muted"><i class="bi bi-arrow-left"></i> Back to Login</a>
+          <span class="helper small">Need help? Contact HR/IT.</span>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  (function () {
+    const form = document.getElementById('recoverForm');
+    const email = document.getElementById('email');
+    const btn = document.getElementById('submitBtn');
+    const spin = btn.querySelector('.spinner-border');
+    const text = btn.querySelector('.btn-text');
+
+    function validate() {
+      if (!email.value || !email.checkValidity()) {
+        email.classList.add('is-invalid');
+        return false;
+      }
+      email.classList.remove('is-invalid');
+      return true;
+    }
+
+    email.addEventListener('input', () => email.classList.remove('is-invalid'));
+
+    form.addEventListener('submit', function (e) {
+      if (!validate()) {
+        e.preventDefault();
+        return;
+      }
+      // UX: show spinner and prevent double submit
+      btn.disabled = true;
+      spin.classList.remove('d-none');
+      text.textContent = 'Sending…';
+    });
+  })();
+</script>
+{% endblock %}

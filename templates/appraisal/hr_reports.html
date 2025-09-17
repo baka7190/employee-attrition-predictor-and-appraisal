@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}HR · Appraisals{% endblock %}
+
+{% block head %}
+<style>
+  .wrap{max-width:1160px;margin:auto}
+  .soft{border:1px solid #e9ecef;border-radius:16px;box-shadow:0 10px 30px rgba(13,110,253,.06)}
+  .kpi .card-body{padding:14px 16px}
+  .kpi .value{font-size:1.5rem;font-weight:800}
+  .kpi .sub{color:#6c757d;font-size:.85rem}
+  .badge-pill{border-radius:999px}
+  .table thead th{font-weight:700;color:#6c757d;border-bottom:1px solid #e9ecef}
+  .empty{border:1px dashed #ced4da;border-radius:12px;padding:18px;color:#6c757d;text-align:center}
+  .toolbar .form-select,.toolbar .form-control{border-radius:10px}
+  .action-chip{display:flex;align-items:center;gap:.5rem;border:1px solid #e9ecef;border-radius:999px;padding:.45rem .9rem;background:#fff}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="wrap">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+      <h4 class="mb-0 d-flex align-items-center gap-2">
+        <i class="bi bi-shield-check"></i> HR Review Queue / Reports
+      </h4>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-danger btn-sm"  href="{{ url_for('appraisal.hr_export_pdf') }}"><i class="bi bi-file-earmark-pdf"></i> Export PDF</a>
+        <a class="btn btn-outline-success btn-sm" href="{{ url_for('appraisal.hr_export_excel') }}"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('appraisal.hr_export_csv') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+      </div>
+    </div>
+
+    {# derive counts by status #}
+    {% set ns = namespace(pending=0, reviewed=0, approved=0, returned=0, draft=0) %}
+    {% for a in appraisals %}
+      {% set S = a.status.name if a.status else 'DRAFT' %}
+      {% if S == 'MANAGER_SUBMITTED' %}{% set ns.pending  = ns.pending + 1 %}{% endif %}
+      {% if S == 'HR_REVIEWED'      %}{% set ns.reviewed = ns.reviewed + 1 %}{% endif %}
+      {% if S == 'APPROVED'         %}{% set ns.approved = ns.approved + 1 %}{% endif %}
+      {% if S == 'REJECTED'         %}{% set ns.returned = ns.returned + 1 %}{% endif %}
+      {% if S == 'DRAFT'            %}{% set ns.draft    = ns.draft + 1 %}{% endif %}
+    {% endfor %}
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">Awaiting HR</div><div class="value">{{ ns.pending }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">HR Reviewed</div><div class="value">{{ ns.reviewed }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">Approved</div><div class="value">{{ ns.approved }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">Returned</div><div class="value">{{ ns.returned }}</div></div></div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="card soft mb-3">
+      <div class="card-body d-flex flex-wrap align-items-center gap-2 toolbar">
+        <div class="input-group input-group-sm" style="max-width:320px">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="q" type="search" class="form-control" placeholder="Search by employee / supervisor / ID">
+        </div>
+        <select id="statusFilter" class="form-select form-select-sm" style="max-width:220px">
+          <option value="">All statuses</option>
+          <option value="MANAGER_SUBMITTED">Awaiting HR</option>
+          <option value="HR_REVIEWED">HR Reviewed</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Returned</option>
+          <option value="DRAFT">Draft</option>
+        </select>
+        <div class="ms-auto">
+          <span class="text-muted small">Total: {{ appraisals|length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-pills small mb-2" id="tabPills">
+      <li class="nav-item"><a class="nav-link active" data-status="">All</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="MANAGER_SUBMITTED">Awaiting HR ({{ ns.pending }})</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="HR_REVIEWED">HR Reviewed ({{ ns.reviewed }})</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="APPROVED">Approved ({{ ns.approved }})</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="REJECTED">Returned ({{ ns.returned }})</a></li>
+    </ul>
+
+    <!-- Queue Table -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle" id="hrTable">
+        <thead>
+          <tr>
+            <th style="width:80px">ID</th>
+            <th>Employee</th>
+            <th>Supervisor</th>
+            <th style="width:220px">Period</th>
+            <th style="width:90px">Total</th>
+            <th style="width:160px">Status</th>
+            <th style="width:260px" class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in appraisals %}
+          {% set S = a.status.name if a.status else 'DRAFT' %}
+          {% set emp = (a.employee.username if a.employee is defined and a.employee else ('ID ' ~ a.employee_id)) %}
+          {% set sup = (a.supervisor.username if a.supervisor is defined and a.supervisor else ('ID ' ~ a.supervisor_id)) %}
+          <tr data-status="{{ S }}" data-text="{{ (emp ~ ' ' ~ sup ~ ' #' ~ a.id)|lower }}">
+            <td class="text-muted">#{{ a.id }}</td>
+            <td>{{ emp }}</td>
+            <td>{{ sup }}</td>
+            <td class="text-nowrap">{{ a.period_start }} → {{ a.period_end }}</td>
+            <td class="fw-semibold">{{ a.total_score or 0 }}</td>
+            <td>
+              {% set badge = 'secondary' %}
+              {% if S == 'MANAGER_SUBMITTED' %}{% set badge='warning'   %}{% endif %}
+              {% if S == 'HR_REVIEWED'      %}{% set badge='primary'   %}{% endif %}
+              {% if S == 'APPROVED'         %}{% set badge='success'   %}{% endif %}
+              {% if S == 'REJECTED'         %}{% set badge='danger'    %}{% endif %}
+              <span class="badge badge-pill text-bg-{{ badge }}">{{ S.replace('_',' ')|title }}</span>
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('appraisal.hr_review_detail', appraisal_id=a.id) }}" class="btn btn-primary">
+                  <i class="bi bi-box-arrow-up-right"></i> Open
+                </a>
+                <form method="POST" action="{{ url_for('appraisal.hr_approve', appraisal_id=a.id) }}">
+                  <button class="btn btn-success"><i class="bi bi-check2-circle"></i> Approve</button>
+                </form>
+                <form method="POST" action="{{ url_for('appraisal.hr_reject', appraisal_id=a.id) }}">
+                  <button class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> Reject</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7"><div class="empty">No items.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // search + status filters for HR queue
+  const q = document.getElementById('q');
+  const statusSel = document.getElementById('statusFilter');
+  const pills = Array.from(document.querySelectorAll('#tabPills .nav-link'));
+  const rows = Array.from(document.querySelectorAll('#hrTable tbody tr'));
+
+  function applyFilters(){
+    const term = (q && q.value || '').toLowerCase();
+    const statusA = (statusSel && statusSel.value) || '';
+    const statusB = (document.querySelector('#tabPills .nav-link.active')?.getAttribute('data-status')) || '';
+    rows.forEach(tr=>{
+      const text = (tr.getAttribute('data-text')||'').toLowerCase();
+      const st = tr.getAttribute('data-status')||'';
+      const okStatus = (!statusA || st===statusA) && (!statusB || st===statusB);
+      const okText = !term || text.includes(term);
+      tr.style.display = (okStatus && okText) ? '' : 'none';
+    });
+  }
+  q && q.addEventListener('input', applyFilters);
+  statusSel && statusSel.addEventListener('change', applyFilters);
+  pills.forEach(p=>p.addEventListener('click', ()=>{
+    pills.forEach(x=>x.classList.remove('active')); p.classList.add('active'); applyFilters();
+  }));
+  applyFilters();
+</script>
+{% endblock %}

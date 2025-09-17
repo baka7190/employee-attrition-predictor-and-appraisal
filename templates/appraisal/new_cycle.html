@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}Launch Cycle{% endblock %}
+
+{% block content %}
+<style>
+  .page-wrap{max-width:1100px;margin:auto}
+  .card{border:0;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+  .section-title{font-weight:700;font-size:1rem;margin-bottom:.5rem}
+  .muted{color:#6c757d}
+  .w-110{width:110px}
+  .sticky-actions{position:sticky;bottom:0;background:#fff;padding:12px;border-top:1px solid #eee;z-index:5}
+</style>
+
+<div class="container-fluid py-4">
+  <div class="page-wrap">
+    <!-- Header + Autofill button -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h3 class="mb-0">Launch Cycle <span class="badge bg-secondary">HR</span></h3>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="autofillBtn">
+        Autofill Demo
+      </button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" id="cycleForm" novalidate>
+      <!-- Cycle Details -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="section-title">Cycle Details</div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" required placeholder="2025 H2 – Test Cycle">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label">Start date</label>
+              <input type="date" name="start_date" class="form-control">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label">End date</label>
+              <input type="date" name="end_date" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="2" placeholder="Optional notes shown to managers & employees..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Criteria & Weights -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div>
+              <div class="section-title mb-0">Criteria &amp; Weights</div>
+              <div class="muted small">Weights must total <strong>100%</strong>. Default rows provided.</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="addSectionBtn">Add Section</button>
+          </div>
+
+          <div id="sectionsWrap" class="vstack gap-2">
+            <!-- default rows -->
+            <div class="row g-2 align-items-center section-row">
+              <div class="col-7 col-md-8">
+                <input class="form-control" name="section_name[]" placeholder="Goals" value="Goals">
+              </div>
+              <div class="col-4 col-md-3">
+                <div class="input-group">
+                  <input class="form-control text-end" name="section_weight[]" type="number" min="0" max="100" step="1" value="60">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="col-1 d-flex justify-content-end">
+                <button class="btn btn-outline-danger btn-sm remove-row" type="button">Remove</button>
+              </div>
+            </div>
+
+            <div class="row g-2 align-items-center section-row">
+              <div class="col-7 col-md-8">
+                <input class="form-control" name="section_name[]" placeholder="Competencies" value="Competencies">
+              </div>
+              <div class="col-4 col-md-3">
+                <div class="input-group">
+                  <input class="form-control text-end" name="section_weight[]" type="number" min="0" max="100" step="1" value="30">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="col-1 d-flex justify-content-end">
+                <button class="btn btn-outline-danger btn-sm remove-row" type="button">Remove</button>
+              </div>
+            </div>
+
+            <div class="row g-2 align-items-center section-row">
+              <div class="col-7 col-md-8">
+                <input class="form-control" name="section_name[]" placeholder="Values/Behavior" value="Values & Behavior">
+              </div>
+              <div class="col-4 col-md-3">
+                <div class="input-group">
+                  <input class="form-control text-end" name="section_weight[]" type="number" min="0" max="100" step="1" value="10">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="col-1 d-flex justify-content-end">
+                <button class="btn btn-outline-danger btn-sm remove-row" type="button">Remove</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-2 small">
+            Total weight: <strong id="totalWeight">100%</strong>
+            <span id="weightHelp" class="text-danger d-none ms-1">Weights must total 100%.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rating Scale -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="section-title">Rating Scale</div>
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="scale_type" id="scaleNumeric" value="numeric" checked>
+                <label class="form-check-label" for="scaleNumeric">Numeric</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="scale_type" id="scaleLabels" value="labels">
+                <label class="form-check-label" for="scaleLabels">Labels</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-4 numeric-only">
+              <label class="form-label">Min</label>
+              <input type="number" class="form-control" name="scale_min" value="1">
+            </div>
+            <div class="col-12 col-md-4 numeric-only">
+              <label class="form-label">Max</label>
+              <input type="number" class="form-control" name="scale_max" value="5">
+            </div>
+            <div class="col-12 col-md-4 numeric-only">
+              <label class="form-label">Step</label>
+              <input type="number" class="form-control" name="scale_step" value="1">
+            </div>
+
+            <div class="col-12 labels-only d-none">
+              <label class="form-label">Labels (comma-separated)</label>
+              <input type="text" class="form-control" name="scale_labels" placeholder="Outstanding, Exceeds, Meets, Needs Improvement">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Participants -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="section-title">Participants</div>
+          <div class="muted small mb-2">Check employees included in this cycle and choose their manager.</div>
+
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th style="width:60px;">Add</th>
+                  <th>Employee</th>
+                  <th>Manager</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for e in employees %}
+                <tr>
+                  <td>
+                    <input class="form-check-input participant-toggle"
+                           type="checkbox"
+                           name="participants[]"
+                           value="{{ e.id }}"
+                           id="emp_{{ e.id }}">
+                  </td>
+                  <td>
+                    <label for="emp_{{ e.id }}" class="mb-0">{{ e.username }} <span class="muted">({{ e.email }})</span></label>
+                  </td>
+                  <td style="max-width:360px">
+                    <select class="form-select manager-select" name="manager_for__{{ e.id }}" disabled>
+                      <option value="">Choose manager…</option>
+                      {% for m in managers %}
+                        <option value="{{ m.id }}">{{ m.username }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="3" class="muted">No employees found.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card sticky-actions">
+        <div class="d-flex gap-2 justify-content-end">
+          <button type="submit" name="action" value="draft" class="btn btn-outline-secondary">Save as Draft</button>
+          <button type="submit" name="action" value="open" class="btn btn-primary" id="createOpenBtn">Create &amp; Open</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Toggle numeric vs label inputs
+  function toggleScale() {
+    const labels = document.querySelectorAll('.labels-only');
+    const numeric = document.querySelectorAll('.numeric-only');
+    const isLabels = document.getElementById('scaleLabels').checked;
+    labels.forEach(el => el.classList.toggle('d-none', !isLabels));
+    numeric.forEach(el => el.classList.toggle('d-none', isLabels));
+  }
+  document.querySelectorAll('input[name="scale_type"]').forEach(r => r.addEventListener('change', toggleScale));
+  toggleScale();
+
+  // Sections add/remove + total weight
+  const wrap = document.getElementById('sectionsWrap');
+  document.getElementById('addSectionBtn').addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'row g-2 align-items-center section-row';
+    row.innerHTML = `
+      <div class="col-7 col-md-8">
+        <input class="form-control" name="section_name[]" placeholder="Section name">
+      </div>
+      <div class="col-4 col-md-3">
+        <div class="input-group">
+          <input class="form-control text-end" name="section_weight[]" type="number" min="0" max="100" step="1" value="0">
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+      <div class="col-1 d-flex justify-content-end">
+        <button class="btn btn-outline-danger btn-sm remove-row" type="button">Remove</button>
+      </div>`;
+    wrap.appendChild(row);
+    updateTotal();
+  });
+
+  wrap.addEventListener('click', (e) => {
+    if (e.target.closest('.remove-row')) {
+      e.target.closest('.section-row').remove();
+      updateTotal();
+    }
+  });
+
+  wrap.addEventListener('input', (e) => {
+    if (e.target.name === 'section_weight[]') updateTotal();
+  });
+
+  function updateTotal() {
+    let sum = 0;
+    document.querySelectorAll('input[name="section_weight[]"]').forEach(inp => {
+      sum += parseFloat(inp.value || 0);
+    });
+    const total = document.getElementById('totalWeight');
+    const help = document.getElementById('weightHelp');
+    total.textContent = `${sum}%`;
+    const bad = Math.abs(sum - 100) > 0.01;
+    help.classList.toggle('d-none', !bad);
+    document.getElementById('createOpenBtn').disabled = bad;
+  }
+  updateTotal();
+
+  // Enable manager select only when employee is ticked
+  document.querySelectorAll('.participant-toggle').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const sel = cb.closest('tr').querySelector('.manager-select');
+      sel.disabled = !cb.checked;
+      if (!cb.checked) sel.value = '';
+    });
+  });
+
+  // ---------- AUTOFILL DEMO ----------
+  function iso(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function flashMessage(msg, type='success') {
+    const box = document.createElement('div');
+    box.className = `alert alert-${type} alert-dismissible fade show`;
+    box.role = 'alert';
+    box.innerHTML = `${msg}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
+    document.querySelector('.page-wrap').prepend(box);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      if (box) box.classList.remove('show');
+    }, 4000);
+  }
+
+  function autofillDemo() {
+    // Unique name to avoid "already exists"
+    const now = new Date();
+    const timePart = now.toTimeString().slice(0,8).replace(/:/g,'.');
+    document.querySelector('input[name="name"]').value = `2025 H2 – Demo Cycle ${timePart}`;
+
+    // Dates
+    const start = new Date();
+    start.setDate(start.getDate() + 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 90);
+    document.querySelector('input[name="start_date"]').value = iso(start);
+    document.querySelector('input[name="end_date"]').value = iso(end);
+
+    // Description
+    document.querySelector('textarea[name="description"]').value =
+      "Autofilled sample cycle for demonstration. Includes self-review, manager review, and calibration window.";
+
+    // Ensure rating scale is valid (numeric 1–5)
+    const numericRadio = document.getElementById('scaleNumeric');
+    numericRadio.checked = true;
+    toggleScale();
+    const minEl = document.querySelector('input[name="scale_min"]');
+    const maxEl = document.querySelector('input[name="scale_max"]');
+    const stepEl = document.querySelector('input[name="scale_step"]');
+    const lblEl = document.querySelector('input[name="scale_labels"]');
+    if (minEl) minEl.value = 1;
+    if (maxEl) maxEl.value = 5;
+    if (stepEl) stepEl.value = 1;
+    if (lblEl) lblEl.value = '';
+
+    // Normalize weights (keeps 60/30/10)
+    const weights = document.querySelectorAll('input[name="section_weight[]"]');
+    if (weights.length >= 3) {
+      weights[0].value = 60;
+      weights[1].value = 30;
+      weights[2].value = 10;
+    }
+    updateTotal();
+
+    // Select first three participants and assign first manager option
+    const toggles = Array.from(document.querySelectorAll('.participant-toggle')).slice(0,3);
+    toggles.forEach(cb => {
+      cb.checked = true;
+      const sel = cb.closest('tr').querySelector('.manager-select');
+      if (sel) {
+        sel.disabled = false;
+        // choose first non-empty option
+        const opt = Array.from(sel.options).find(o => o.value);
+        if (opt) sel.value = opt.value;
+      }
+    });
+
+    // Done
+    const createBtn = document.getElementById('createOpenBtn');
+    if (!createBtn.disabled) createBtn.focus();
+    flashMessage('Sample data filled. You can submit the form now.');
+  }
+
+  document.getElementById('autofillBtn').addEventListener('click', autofillDemo);
+</script>
+{% endblock %}

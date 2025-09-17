@@ -1,0 +1,19 @@
+body {
+  background: #f5f7fa;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.kpi .card-body {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  padding: 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #343a40;
+}
+
+.kpi small {
+  font-size: 0.8rem;
+  color: #6c757d;
+}

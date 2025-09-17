@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Cycle – {{ cycle.name }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+<div class="d-flex align-items-center justify-content-between">
+<h2 class="mb-0">{{ cycle.name }}</h2>
+<span class="badge bg-info">{{ stats.status }}</span>
+</div>
+<p class="text-muted">{{ cycle.start_date }} → {{ cycle.end_date }}</p>
+
+
+<div class="row g-3 mb-4">
+<div class="col-md-3">
+<div class="card shadow-sm"><div class="card-body">
+<div class="text-muted small">Participants</div>
+<div class="fs-4">{{ stats.participants }}</div>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card shadow-sm"><div class="card-body">
+<div class="text-muted small">Managers</div>
+<div class="fs-4">{{ stats.managers }}</div>
+</div></div>
+</div>
+<div class="col-md-6">
+<div class="card shadow-sm"><div class="card-body">
+<div class="text-muted small">Template</div>
+<ul class="mb-2">
+{% for s in cycle.template.sections %}
+<li>{{ s.name }} — {{ (s.weight * 100)|round(0) }}%</li>
+{% endfor %}
+</ul>
+<div class="text-muted small">Scale: {{ cycle.template.scale|join(', ') }}</div>
+</div></div>
+</div>
+</div>
+
+
+<div class="card shadow-sm">
+<div class="card-body">
+<h5 class="card-title">Enrollments</h5>
+<div class="table-responsive">
+<table class="table table-sm align-middle">
+<thead><tr><th>Employee</th><th>Manager</th><th>Status</th></tr></thead>
+<tbody>
+{% for a in appraisals %}
+<tr>
+<td>{{ a.employee.username or a.employee.email }} (ID {{a.employee_id}})</td>
+<td>{{ a.manager.username or a.manager.email }} (ID {{a.manager_id}})</td>
+<td><span class="badge bg-light text-dark">{{ a.status }}</span></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

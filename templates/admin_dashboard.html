@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard | Employee Attrition Prediction{% endblock %}
+
+{% block page_title %}<i class="bi bi-speedometer2 me-2"></i>Admin Dashboard{% endblock %}
+{% block page_subtitle %}Manage users, appraisal criteria, predictions, and model assets.{% endblock %}
+
+{% block page_actions %}
+  <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-box-arrow-right me-1"></i> Logout
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="d-flex justify-content-center">
+      <div class="col-md-6">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show text-center" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- Loading Spinner -->
+<div id="spinner-overlay">
+  <div class="spinner-border text-light" role="status" style="width:4rem; height:4rem;">
+    <span class="visually-hidden">Training...</span>
+  </div>
+</div>
+
+{# ---------- KPI ROW ---------- #}
+{% set total_users = users|length %}
+{% set active_users = (users|selectattr('is_active')|list)|length %}
+{% set pending_users = total_users - active_users %}
+{% set criteria_count = criteria|length %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="text-muted small mb-1">Total Users</div>
+        <div class="display-6">{{ total_users }}</div>
+        <div class="text-muted small"><i class="bi bi-people me-1"></i>All registered accounts</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="text-muted small mb-1">Active</div>
+        <div class="display-6 text-success">{{ active_users }}</div>
+        <div class="text-muted small"><i class="bi bi-check2-circle me-1"></i>Approved users</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="text-muted small mb-1">Pending</div>
+        <div class="display-6 text-warning">{{ pending_users }}</div>
+        <div class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Awaiting approval</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="text-muted small mb-1">Appraisal Criteria</div>
+        <div class="display-6">{{ criteria_count }}</div>
+        <div class="text-muted small"><i class="bi bi-list-task me-1"></i>Duty & Skill items</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ---------- ACTIVE USERS ---------- #}
+<div class="card mb-4">
+  <div class="card-header bg-dark text-white">
+    <i class="bi bi-people-fill me-2"></i> Active Users
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle" id="activeTable">
+        <thead>
+          <tr>
+            <th>Username</th><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for user in users if user.is_active %}
+          <tr>
+            <td class="fw-semibold">{{ user.username }}</td>
+            <td class="text-muted">{{ user.email }}</td>
+            <td>{{ role_str(user.role) }}</td>
+            <td><span class="badge bg-success">Active</span></td>
+            <td class="text-end">
+              <form action="{{ url_for('reset_user_password', user_id=user.id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-warning"><i class="bi bi-key me-1"></i>Reset</button>
+              </form>
+              <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-center text-muted">No active users</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{# ---------- PENDING APPROVALS ---------- #}
+<div class="card mb-4">
+  <div class="card-header bg-warning">
+    <i class="bi bi-hourglass-top me-2"></i> Pending Approvals
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Username</th><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for user in users if not user.is_active %}
+          <tr>
+            <td class="fw-semibold">{{ user.username }}</td>
+            <td class="text-muted">{{ user.email }}</td>
+            <td>{{ role_str(user.role) }}</td>
+            <td><span class="badge bg-warning text-dark">Pending</span></td>
+            <td class="text-end">
+              <form action="{{ url_for('approve_user', user_id=user.id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-success"><i class="bi bi-check2-circle me-1"></i>Approve</button>
+              </form>
+              <form action="{{ url_for('reject_user', user_id=user.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Reject this user?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-danger"><i class="bi bi-x-circle me-1"></i>Reject</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-center text-muted">No pending users</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{# ---------- CREATE USER ---------- #}
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <i class="bi bi-person-plus me-2"></i> Create New User
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('create_user') }}" class="row g-2 align-items-center">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-md-2">
+        <input type="text" name="username" class="form-control" placeholder="Username" required>
+      </div>
+      <div class="col-md-3">
+        <input type="email" name="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="col-md-3">
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+      </div>
+      <div class="col-md-2">
+        <select name="role" class="form-select" required>
+          <option value="" disabled selected>Role</option>
+          <option value="EMPLOYEE">Employee</option>
+          <option value="MANAGER">Manager</option>
+          <option value="HR">HR</option>
+          <option value="ADMIN">Admin</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-dark w-100"><i class="bi bi-plus-lg me-1"></i>Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ---------- APPRAISAL CRITERIA ---------- #}
+<div class="card mb-4">
+  <div class="card-header bg-success text-white">
+    <i class="bi bi-list-task me-2"></i> Appraisal Criteria
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('appraisal.admin_manage_criteria') }}" class="row g-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-md-6">
+        <input type="text" name="name" class="form-control" placeholder="Criteria Name" required>
+      </div>
+      <div class="col-md-4">
+        <select name="type" class="form-select" required>
+          <option value="Duty">Duty</option>
+          <option value="Skill">Skill</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle me-1"></i>Add</button>
+      </div>
+    </form>
+    <hr>
+    <ul class="list-group">
+      {% for c in criteria %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        {{ c.name }} <span class="badge bg-light text-dark">{{ c.type }}</span>
+        <form method="POST" action="{{ url_for('appraisal.delete_criteria', criteria_id=c.id) }}" class="d-inline" onsubmit="return confirm('Delete this criteria?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Delete</button>
+        </form>
+      </li>
+      {% else %}
+      <li class="list-group-item text-muted">No criteria defined</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+{# ---------- PREDICTIONS ---------- #}
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    <i class="bi bi-graph-up me-2"></i> Predictions
+  </div>
+  <div class="card-body">
+    <form action="{{ url_for('clear_predictions') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-danger"><i class="bi bi-x-lg me-1"></i> Clear All Predictions</button>
+    </form>
+  </div>
+</div>
+
+{# ---------- MODEL MANAGEMENT ---------- #}
+<div class="card mb-4">
+  <div class="card-header bg-secondary text-white">
+    <i class="bi bi-cpu me-2"></i> Model Management
+  </div>
+  <div class="card-body">
+    <form action="{{ url_for('delete_old_models') }}" method="POST" class="mb-3"
+          onsubmit="return confirm('Delete all old models?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-danger"><i class="bi bi-trash3 me-1"></i> Delete Old Models</button>
+    </form>
+
+    <form action="{{ url_for('train_model') }}" method="POST" class="mb-3"
+          onsubmit="showSpinner(); return true;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary"><i class="bi bi-gear-fill me-1"></i> Train New Model</button>
+    </form>
+
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="text-muted mb-2">Available Models</h6>
+        <ul class="list-group">
+          {% if models %}
+            {% set newest = (models|sort(attribute='ctime', reverse=true))|first %}
+            {% for m in models|sort(attribute='ctime', reverse=true) %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ m.name }}
+                {% if m.name == newest.name %}
+                  <span class="badge bg-success">Newly Trained</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="list-group-item text-muted">No models found</li>
+          {% endif %}
+        </ul>
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0">
+        <h6 class="text-muted mb-2">Available Encoders</h6>
+        <ul class="list-group">
+          {% if encoders %}
+            {% set newest_enc = (encoders|sort(attribute='ctime', reverse=true))|first %}
+            {% for e in encoders|sort(attribute='ctime', reverse=true) %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ e.name }}
+                {% if e.name == newest_enc.name %}
+                  <span class="badge bg-info">Latest Encoder</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="list-group-item text-muted">No encoders found</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<style>
+  #spinner-overlay {
+    display: none;
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+    align-items: center; justify-content: center;
+  }
+</style>
+<script>
+  function showSpinner() {
+    const spinner = document.getElementById('spinner-overlay');
+    if (spinner) spinner.style.display = 'flex';
+  }
+  window.addEventListener('pageshow', () => {
+    const spinner = document.getElementById('spinner-overlay');
+    if (spinner) spinner.style.display = 'none';
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center vh-100"
+     style="background: linear-gradient(-45deg, #0a2342, #193c70, #0a2342, #193c70); background-size: 400% 400%; animation: gradientMove 10s ease infinite;">
+
+  <div class="card shadow-lg p-4"
+       style="max-width: 400px; width: 100%; background-color: rgba(255,255,255,0.95); border-radius: 10px;">
+    <h3 class="text-center mb-4 text-dark">Sign In</h3>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} text-center">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}" onsubmit="return validateForm(this)">
+      <div class="mb-3">
+        <label class="form-label fw-bold">Username or Email</label>
+        <input type="text" name="identifier" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <input type="hidden" name="expected_role" value="{{ request.args.get('role','') }}">
+
+      <div class="d-flex justify-content-between mb-3">
+        <div>
+          <input type="checkbox" id="remember">
+          <label for="remember">Remember me</label>
+        </div>
+        <a href="{{ url_for('recover') }}" class="text-decoration-none">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="btn w-100 text-white" style="background-color: #f9a825;">
+        Sign In
+      </button>
+
+      <div class="text-center mt-3">
+        Don’t have an account?
+        <a href="{{ url_for('register') }}" class="fw-bold text-decoration-none" style="color:#0a2342;">Sign up</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+</style>
+
+<script>
+function validateForm(form) {
+  if (!form.identifier.value.trim() || !form.password.value.trim()) {
+    alert('Please enter both username and password.');
+    return false;
+  }
+  return true;
+}
+</script>
+{% endblock %}

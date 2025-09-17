@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+{% block title %}Self Appraisal{% endblock %}
+
+{% block head %}
+<style>
+  body{background:linear-gradient(180deg,#f6f9ff 0%,#fff 100%)!important}
+  .page-wrap{max-width:1100px;margin:auto}
+  .soft-card{border:0;border-radius:18px;box-shadow:0 10px 40px rgba(13,110,253,.08)}
+  .section-title{font-weight:800;letter-spacing:.2px}
+  .muted{color:#6c757d}
+  .form-control,.form-select{border-radius:12px}
+  .form-control-sm,.form-select-sm{border-radius:10px}
+  .table-clean thead th{color:#6c757d;font-weight:700;border-bottom:1px solid #e9ecef}
+  .table-clean tbody tr:hover{background:#f8fbff}
+  .sm-badge{border:1px solid #e9ecef;border-radius:999px;padding:.15rem .5rem;font-size:.75rem;color:#6c757d}
+  .sticky-submit{position:sticky;bottom:0;z-index:5;background:rgba(246,249,255,.9);backdrop-filter:blur(4px);border-top:1px solid #e9ecef;padding:.75rem 1rem;border-bottom-left-radius:18px;border-bottom-right-radius:18px;display:flex;justify-content:flex-end;gap:.5rem}
+  .helper-card .card-body{padding:14px 16px}
+  .progress.thin{height:8px;border-radius:999px}
+  .check-item{display:flex;align-items:center;gap:.5rem}
+  .check-item .icon{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px}
+  .icon-ok{background:#e8f6ee;color:#198754}
+  .icon-warn{background:#fff3cd;color:#996c00}
+  .icon-off{background:#edf2f7;color:#6c757d}
+  .ro-chip{font-size:.75rem;color:#6c757d}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-wrap">
+    <div class="soft-card card">
+      <div class="card-body">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="section-title mb-0"><i class="bi bi-clipboard2-check me-2"></i>Employee Self-Appraisal</h4>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="fillAllSamples()">
+              <i class="bi bi-magic"></i> Fill ALL Sample Data
+            </button>
+            <span class="badge text-bg-primary"><i class="bi bi-person-badge me-1"></i> Self Review</span>
+          </div>
+        </div>
+        <div class="muted mb-3">Employee sections are live. Supervisor/Manager/HR sections are visible but locked in this view.</div>
+
+        <!-- Helpers -->
+        <div class="row g-3 mb-3">
+          <div class="col-lg-6">
+            <div class="card helper-card"><div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">My Progress</div>
+                <span class="sm-badge"><span id="progCount">0/0</span> sections</span>
+              </div>
+              <div class="progress thin mt-2"><div id="progBar" class="progress-bar" style="width:0%"></div></div>
+              <div class="small text-muted mt-1">Fill each section to reach 100%.</div>
+            </div></div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card helper-card"><div class="card-body">
+              <div class="fw-semibold mb-1">Submission Readiness</div>
+              <div class="row g-2">
+                <div class="col-12 col-sm-6"><div class="check-item"><span id="ckPeriod" class="icon icon-off"><i class="bi bi-dot"></i></span><span>Period (start & end)</span></div></div>
+                <div class="col-12 col-sm-6"><div class="check-item"><span id="ckWorkload" class="icon icon-off"><i class="bi bi-dot"></i></span><span>Time allocation totals 100%</span></div></div>
+                <div class="col-12 col-sm-6"><div class="check-item"><span id="ckExamples" class="icon icon-off"><i class="bi bi-dot"></i></span><span>Duty examples provided</span></div></div>
+                <div class="col-12 col-sm-6"><div class="check-item"><span id="ckComment" class="icon icon-off"><i class="bi bi-dot"></i></span><span>Employee comment added</span></div></div>
+                {% if form.employee_signature is defined %}
+                <div class="col-12 col-sm-6"><div class="check-item"><span id="ckSign" class="icon icon-off"><i class="bi bi-dot"></i></span><span>E-signature present</span></div></div>
+                {% endif %}
+              </div>
+            </div></div>
+          </div>
+        </div>
+
+        <!-- FORM -->
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+
+          <!-- A. Staff Information -->
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="section-title mb-2">A. Staff Information</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleA()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Employee name</label>
+              {{ form.employee_name(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">HOD name</label>
+              {{ form.hod_name(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Position</label>
+              {{ form.position_title(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Department</label>
+              {{ form.department_name(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Entry date to DWU</label>
+              {{ form.entry_date(class="form-control form-control-sm", type="date") }}
+            </div>
+
+            <!-- supervisor-only meta (locked) -->
+            <div class="col-md-4">
+              <label class="form-label">Head of Department (position)</label>
+              {{ form.hod_position(class="form-control form-control-sm", disabled=True) }}
+              <div class="ro-chip mt-1"><i class="bi bi-lock"></i> Supervisor completes</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Length supervising (Years / Months)</label>
+              <div class="d-flex gap-2">
+                {{ form.supervise_years(class="form-control form-control-sm", disabled=True) }}
+                {{ form.supervise_months(class="form-control form-control-sm", disabled=True) }}
+              </div>
+              <div class="ro-chip mt-1"><i class="bi bi-lock"></i> Supervisor completes</div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- B. Period covered -->
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="section-title mb-2">B. Period Covered by this Evaluation</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleB()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">{{ form.period_start.label.text }}</label>
+              {{ form.period_start(class="form-control form-control-sm", type="date") }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ form.period_end.label.text }}</label>
+              {{ form.period_end(class="form-control form-control-sm", type="date") }}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- C. Time & Effort split -->
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="section-title mb-2">C. Percentage of Time and Effort</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleC()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Teaching &amp; learning %</label>
+              {{ form.teaching_percent(class="form-control form-control-sm wl", placeholder="e.g. 60") }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Research &amp; publication %</label>
+              {{ form.research_percent(class="form-control form-control-sm wl", placeholder="e.g. 30") }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Other commitments %</label>
+              {{ form.other_percent(class="form-control form-control-sm wl", placeholder="e.g. 10") }}
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="w-100 small">
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted">Total</span>
+                  <span id="wlTotal" class="fw-semibold">0%</span>
+                </div>
+                <div class="progress thin"><div id="wlBar" class="progress-bar" style="width:0%"></div></div>
+                <div id="wlHint" class="small mt-1 text-muted">Must equal 100%.</div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- D. Publications -->
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="section-title mb-2">D. Publications (2020–2024)</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleD()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          {{ form.publications_2020_2024(class="form-control", rows="3", placeholder="List publications, or write 'No publication'") }}
+
+          <hr class="my-4">
+
+          <!-- E. Teaching Workload — Semester 2 -->
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="section-title mb-1">E. Teaching Workload — Semester 2, {{ form.eval_year.data }}</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleE()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-clean align-middle">
+              <thead>
+                <tr>
+                  <th style="width:120px">Unit code</th>
+                  <th>Unit name</th>
+                  <th style="width:90px">Group</th>
+                  <th style="width:130px">No. of students</th>
+                  <th style="width:260px">Session type</th>
+                  <th style="width:120px">Hours / week</th>
+                </tr>
+              </thead>
+              <tbody id="s2Body">
+                {% for r in form.teach_s2 %}
+                <tr>
+                  <td>{{ r.unit_code(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.unit_name(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.group_name(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.num_students(class="form-control form-control-sm", type="number", min="0") }}</td>
+                  <td>{{ r.session_type(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.hours_per_week(class="form-control form-control-sm s2h", type="number", min="0", step="0.5") }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr><th colspan="5" class="text-end">Total hours per week</th><th id="s2Total">0</th></tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- F. Teaching Workload — Semester 1 -->
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="section-title mb-1">F. Teaching Workload — Semester 1, {{ form.eval_year.data }}</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleF()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-clean align-middle">
+              <thead>
+                <tr>
+                  <th style="width:120px">Unit code</th>
+                  <th>Unit name</th>
+                  <th style="width:90px">Group</th>
+                  <th style="width:130px">No. of students</th>
+                  <th style="width:260px">Session type</th>
+                  <th style="width:120px">Hours / week</th>
+                </tr>
+              </thead>
+              <tbody id="s1Body">
+                {% for r in form.teach_s1 %}
+                <tr>
+                  <td>{{ r.unit_code(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.unit_name(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.group_name(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.num_students(class="form-control form-control-sm", type="number", min="0") }}</td>
+                  <td>{{ r.session_type(class="form-control form-control-sm") }}</td>
+                  <td>{{ r.hours_per_week(class="form-control form-control-sm s1h", type="number", min="0", step="0.5") }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr><th colspan="5" class="text-end">Total hours per week</th><th id="s1Total">0</th></tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- G. Duties & Tasks (examples by employee; ratings later) -->
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <h5 class="section-title mb-1">G. Key Duties or Tasks</h5>
+              <p class="muted small mb-3">Provide illustrative examples of performance. Supervisor will rate 1–5 later.</p>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2 align-self-start" onclick="sampleG()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+
+          {% if form.scores and form.scores|length > 0 %}
+          <div class="table-responsive">
+            <table class="table table-clean table-hover align-middle">
+              <thead>
+                <tr>
+                  <th style="width:52%">Duty / Task</th>
+                  <th style="width:150px">Supervisor Rating (1–5)</th>
+                  <th>Illustrative example of performance</th>
+                </tr>
+              </thead>
+              <tbody id="dutiesBody">
+                {% for row in form.scores %}
+                  {% set label = criteria_by_id.get(row.criteria_id.data, 'Criterion') %}
+                  <tr class="score-row">
+                    {{ row.criteria_id(type="hidden") }}
+                    <td class="align-top"><span class="fw-semibold duty-label">{{ label }}</span></td>
+                    <td class="align-top">
+                      {{ row.rating(class="form-select form-select-sm", disabled=True) }}
+                      <div class="ro-chip mt-1"><i class="bi bi-lock"></i> Supervisor rates</div>
+                    </td>
+                    <td class="align-top">{{ row.example_text(class="form-control form-control-sm duty-example", rows="2", placeholder="Brief example / evidence") }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="alert alert-info">No duties/tasks defined by HR yet.</div>
+          {% endif %}
+
+          <hr class="my-4">
+
+          <!-- H. Personal Skills & Attributes (supervisor-only) -->
+          <h5 class="section-title mb-1">H. Personal Skills &amp; Attributes</h5>
+          <p class="muted small mb-3">Supervisor ratings only. Visible for transparency; locked in employee view.</p>
+          <div class="table-responsive">
+            <table class="table table-clean align-middle">
+              <thead><tr><th>Attribute</th><th style="width:160px">Rating (1–5)</th></tr></thead>
+              <tbody>
+                {% for attr in form.skill_ratings %}
+                <tr>
+                  <td>{{ attr.label_text.data }}</td>
+                  <td>{{ attr.rating(class="form-select form-select-sm", disabled=True) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- I. Employee Comments -->
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="section-title mb-2">I. Employee Comments</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleI()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          {{ form.employee_comment(class="form-control", rows="4", placeholder="Include a suggestion for professional development to improve performance") }}
+          <div class="small text-muted mt-1"><span id="cmCount">0</span> characters</div>
+
+          <!-- J. Signatures -->
+          <div class="d-flex align-items-center justify-content-between mt-4">
+            <h5 class="section-title mb-2">J. Signatures</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="sampleJ()">
+              <i class="bi bi-magic"></i> Sample
+            </button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Employee's signature (type full name)</label>
+              {{ form.employee_signature(class="form-control", placeholder=current_user.username) }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Date</label>
+              {{ form.employee_sign_date(class="form-control form-control-sm", type="date") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Supervisor's comments</label>
+              {{ form.supervisor_comments(class="form-control", rows="4", disabled=True) }}
+              <div class="ro-chip mt-1"><i class="bi bi-lock"></i> Supervisor completes</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Supervisor signature</label>
+              {{ form.supervisor_signature(class="form-control form-control-sm", disabled=True) }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Date</label>
+              {{ form.supervisor_sign_date(class="form-control form-control-sm", type="date", disabled=True) }}
+            </div>
+          </div>
+
+          {% if form.errors %}
+            <div class="alert alert-warning mt-3">
+              <strong>Please review:</strong>
+              <ul class="mb-0">
+                {% for field, errs in form.errors.items() %}
+                  {% for e in errs %}<li>{{ e }}</li>{% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          <div class="sticky-submit">
+            <a href="{{ url_for('appraisal.employee_list_appraisals') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> My Appraisals
+            </a>
+            <button class="btn btn-primary">
+              <i class="bi bi-send me-1"></i> Submit to Manager
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="text-center small text-muted mt-3">
+      Need help? See <a href="{{ url_for('.criteria_ui') }}" class="text-decoration-none">criteria guide</a>.
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- General helpers ---
+  function valNum(inp){ const v = parseFloat((inp && inp.value || '').trim()); return isNaN(v) ? 0 : v; }
+  function setIcon(el, ok){
+    if(!el) return;
+    el.classList.remove('icon-ok','icon-warn','icon-off');
+    el.classList.add(ok===true ? 'icon-ok' : ok===false ? 'icon-warn' : 'icon-off');
+    el.innerHTML = ok===true ? '<i class="bi bi-check-lg"></i>' : ok===false ? '<i class="bi bi-exclamation-lg"></i>' : '<i class="bi bi-dot"></i>';
+  }
+  function setValByName(name, value){
+    const el = document.querySelector('[name="'+name+'"]');
+    if(!el) return;
+    el.value = value;
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+    el.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+  function setInput(el, value){
+    if(!el) return;
+    el.value = value;
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+    el.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+
+  // --- Workload total ---
+  const wlInputs = Array.from(document.querySelectorAll('.wl'));
+  const wlTotal = document.getElementById('wlTotal');
+  const wlBar   = document.getElementById('wlBar');
+  const wlHint  = document.getElementById('wlHint');
+  const ckWorkload = document.getElementById('ckWorkload');
+  function updateWorkload(){
+    const total = wlInputs.reduce((s,i)=>s+valNum(i),0);
+    wlTotal && (wlTotal.textContent = (Math.round(total*10)/10) + '%');
+    if(wlBar){ wlBar.style.width = Math.max(0, Math.min(100, total)) + '%'; }
+    if(total===100){ wlHint && (wlHint.textContent='Looks good.'); setIcon(ckWorkload, true); }
+    else if(total===0){ wlHint && (wlHint.textContent='Must equal 100%.'); setIcon(ckWorkload, null); }
+    else { wlHint && (wlHint.textContent='Must equal 100%.'); setIcon(ckWorkload, false); }
+  }
+  wlInputs.forEach(i=>i.addEventListener('input', updateWorkload));
+  updateWorkload();
+
+  // --- Period readiness ---
+  const ckPeriod = document.getElementById('ckPeriod');
+  function checkPeriod(){
+    const ps = document.querySelector('[name="{{ form.period_start.name }}"]');
+    const pe = document.querySelector('[name="{{ form.period_end.name }}"]');
+    const ok = (ps && ps.value) && (pe && pe.value);
+    setIcon(ckPeriod, ok ? true : null);
+  }
+  ['change','input'].forEach(ev=>{
+    const ps = document.querySelector('[name="{{ form.period_start.name }}"]');
+    const pe = document.querySelector('[name="{{ form.period_end.name }}"]');
+    ps && ps.addEventListener(ev, checkPeriod);
+    pe && pe.addEventListener(ev, checkPeriod);
+  });
+  checkPeriod();
+
+  // --- Examples progress (duty examples only) ---
+  const exampleAreas = Array.from(document.querySelectorAll('.duty-example'));
+  const progBar  = document.getElementById('progBar');
+  const progCnt  = document.getElementById('progCount');
+  const ckExamples= document.getElementById('ckExamples');
+  function updateExamplesProgress(){
+    const total = exampleAreas.length;
+    const done  = exampleAreas.filter(a=>a && a.value && a.value.trim().length>0).length;
+    const pct   = total ? Math.round((done/total)*100) : 0;
+    progBar && (progBar.style.width = pct+'%');
+    progCnt && (progCnt.textContent = (done + '/' + total));
+    setIcon(ckExamples, total>0 ? (done===total ? true : (done===0 ? null : false)) : null);
+  }
+  exampleAreas.forEach(a=>a.addEventListener('input', updateExamplesProgress));
+  updateExamplesProgress();
+
+  // --- Comment counter ---
+  const commentArea = document.querySelector('[name="{{ form.employee_comment.name }}"]');
+  const cmCount = document.getElementById('cmCount');
+  const ckComment = document.getElementById('ckComment');
+  function updateComment(){
+    const n = (commentArea && commentArea.value || '').trim().length;
+    cmCount && (cmCount.textContent = n);
+    setIcon(ckComment, n>=10 ? true : (n>0 ? false : null));
+  }
+  commentArea && commentArea.addEventListener('input', updateComment);
+  updateComment();
+
+  // --- Teaching totals ---
+  function sumHours(selector, outId){
+    const hrs = Array.from(document.querySelectorAll(selector)).reduce((s,i)=>s+valNum(i),0);
+    const el = document.getElementById(outId);
+    el && (el.textContent = (Math.round(hrs*10)/10));
+  }
+  function hookHours(cls, outId){
+    Array.from(document.querySelectorAll('.'+cls)).forEach(i=>i.addEventListener('input',()=>sumHours('.'+cls, outId)));
+    sumHours('.'+cls, outId);
+  }
+  hookHours('s2h','s2Total');
+  hookHours('s1h','s1Total');
+
+  // --- Signature readiness ---
+  const signInput = document.querySelector('[name="{{ form.employee_signature.name }}"]');
+  const ckSign = document.getElementById('ckSign');
+  function updateSign(){ const ok = !!(signInput && signInput.value && signInput.value.trim().length>1); setIcon(ckSign, ok ? true : null); }
+  signInput && signInput.addEventListener('input', updateSign);
+  updateSign();
+
+  // ====================
+  // SAMPLE FILLERS
+  // ====================
+  function sampleA(){
+    setValByName("{{ form.entry_date.name }}", "2021-03-01");
+  }
+
+  function sampleB(){
+    setValByName("{{ form.period_start.name }}", "2024-01-15");
+    setValByName("{{ form.period_end.name }}",   "2024-12-15");
+    checkPeriod();
+  }
+
+  function sampleC(){
+    setValByName("{{ form.teaching_percent.name }}", "60");
+    setValByName("{{ form.research_percent.name }}", "30");
+    setValByName("{{ form.other_percent.name }}",    "10");
+    updateWorkload();
+  }
+
+  function sampleD(){
+    const txt = `Aihi, J. K., & Kila, T. (2022). Digital learning engagement among first-year students at DWU. Journal of Education in PNG, 18(2), 45–59. https://doi.org/10.1234/jepng.18.2.45
+
+Aihi, J. K. (2023). Integrating statistics labs in introductory courses: A quasi-experimental study. Pacific Higher Education Review, 12(1), 23–38.
+
+Aihi, J. K., & Wane, P. (2024). Visual analytics for community health outreach data. Proceedings of the DWU Research Symposium, 77–84.`;
+    setValByName("{{ form.publications_2020_2024.name }}", txt);
+  }
+
+  function sampleE(){
+    const rows = Array.from(document.querySelectorAll('#s2Body tr'));
+    const data = [
+      ["ICT305","Data Visualization","Y3B","52","Lecture","2"],
+      ["ICT305","Data Visualization (Lab)","Y3B","52","Lab/Practical","1.5"],
+      ["RES401","Research Methods II","Y4","36","Lecture","2"],
+      ["EDU210","Curriculum Design","Y2","60","Lecture","2"]
+    ];
+    rows.forEach((tr, i)=>{
+      const d = data[i] || ["","","","","",""];
+      const inputs = tr.querySelectorAll('input, textarea, select');
+      setInput(inputs[0], d[0]); // unit code
+      setInput(inputs[1], d[1]); // unit name
+      setInput(inputs[2], d[2]); // group
+      setInput(inputs[3], d[3]); // students
+      setInput(inputs[4], d[4]); // session type
+      setInput(inputs[5], d[5]); // hours
+    });
+    sumHours('.s2h','s2Total');
+  }
+
+  function sampleF(){
+    const rows = Array.from(document.querySelectorAll('#s1Body tr'));
+    const data = [
+      ["STA102","Statistics I","Y1C","120","Lecture","2"],
+      ["STA102","Statistics I (Tutorial)","Y1C","120","Tutorial","1.5"],
+      ["RES301","Research Methods I","Y3","45","Lecture","2"]
+    ];
+    rows.forEach((tr, i)=>{
+      const d = data[i] || ["","","","","",""];
+      const inputs = tr.querySelectorAll('input, textarea, select');
+      setInput(inputs[0], d[0]);
+      setInput(inputs[1], d[1]);
+      setInput(inputs[2], d[2]);
+      setInput(inputs[3], d[3]);
+      setInput(inputs[4], d[4]);
+      setInput(inputs[5], d[5]);
+    });
+    sumHours('.s1h','s1Total');
+  }
+
+  function sampleG(){
+    const defaultTxt = "See attached outcomes and artifacts (LMS, assessments, consultations, etc.).";
+    const map = [
+      {keys:["Research","Publication"], text:"Completed two peer-reviewed papers and one symposium paper; co-led a grant proposal on visual analytics."},
+      {keys:["Community","Outreach"], text:"Coordinated two weekend data-literacy workshops for local health workers; 60+ participants."},
+      {keys:["Teamwork","Collaboration"], text:"Co-taught RES401 with Dr. Wane; shared materials, aligned assessments, and held joint consultations."},
+      {keys:["Communication","Written","Oral"], text:"Presented at DWU Research Symposium; revised unit outlines and rubrics using plain-language guidelines."},
+      {keys:["Punctuality","Reliability"], text:"Delivered all sessions on time; uploaded weekly materials to LMS by Friday 5 pm; zero missed classes."}
+    ];
+    const rows = Array.from(document.querySelectorAll('#dutiesBody tr'));
+    rows.forEach(tr=>{
+      const label = (tr.querySelector('.duty-label')?.textContent || "").trim();
+      let chosen = defaultTxt;
+      for(const m of map){
+        if(m.keys.some(k => label.toLowerCase().includes(k.toLowerCase()))){
+          chosen = m.text; break;
+        }
+      }
+      const ta = tr.querySelector('.duty-example');
+      setInput(ta, chosen);
+    });
+    updateExamplesProgress();
+  }
+
+  function sampleI(){
+    const txt = "I met my core teaching objectives and expanded support for research-led teaching. For 2025, I’d like to formalize a Data Visualization minor and attend an advanced R/Python workshop to strengthen analytics integration in first-year units.";
+    setValByName("{{ form.employee_comment.name }}", txt);
+  }
+
+  function sampleJ(){
+    setValByName("{{ form.employee_signature.name }}", "Jane K. Aihi");
+    const today = new Date().toISOString().slice(0,10);
+    setValByName("{{ form.employee_sign_date.name }}", today);
+    updateSign();
+  }
+
+  function fillAllSamples(){
+    sampleA(); sampleB(); sampleC(); sampleD();
+    sampleE(); sampleF(); sampleG(); sampleI(); sampleJ();
+  }
+</script>
+{% endblock %}

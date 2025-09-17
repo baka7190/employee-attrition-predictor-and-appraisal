@@ -1,0 +1,80 @@
+<!-- templates/reviews/outbox_employee.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Reviews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark" style="background:#0a2342">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{{ url_for('dashboard') }}">Attrition<span class="text-warning">Detect</span></a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('reviews.new_review') }}">New Review</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-4">
+  <h3 class="mb-3">My Reviews</h3>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% if msgs %}
+      {% for cat, msg in msgs %}
+        <div class="alert alert-{{ 'warning' if cat=='danger' else cat }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Period</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% if reviews %}
+          {% for r in reviews %}
+            <tr>
+              <td>#{{ r.id }}</td>
+              <td>{{ r.period_start.strftime('%Y-%m-%d') }} → {{ r.period_end.strftime('%Y-%m-%d') }}</td>
+              <td><span class="badge bg-secondary">{{ r.status.name.replace('_',' ') }}</span></td>
+              <td>{{ (r.updated_at or r.created_at).strftime('%Y-%m-%d %H:%M') }}</td>
+              <td class="text-end">
+                {% if r.status.name == 'DRAFT' %}
+                  <a class="btn btn-sm btn-primary" href="{{ url_for('reviews.self_review', review_id=r.id) }}">
+                    Edit draft
+                  </a>
+                {% else %}
+                  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('reviews.view_review', review_id=r.id) }}">
+                    View
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No reviews yet.</td></tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Manage Criteria (Admin)</h2>
+
+  <form method="POST" class="mb-4">
+    <div class="row">
+      <div class="col-md-6">
+        <input type="text" name="name" placeholder="Criteria Name" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <select name="type" class="form-control">
+          <option value="Duty">Duty</option>
+          <option value="Skill">Skill</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-success">Add</button>
+      </div>
+    </div>
+  </form>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Criteria</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for c in criteria %}
+      <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.type }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

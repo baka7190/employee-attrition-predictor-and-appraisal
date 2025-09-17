@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Employee Dashboard</h2>
+
+  <!-- Appraisal Section -->
+  <div class="card mt-3 shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title">My Appraisals</h5>
+      <p class="card-text">Submit and view your performance appraisals.</p>
+      <a href="{{ url_for('appraisal.employee_new_appraisal') }}" class="btn btn-primary">Start New Appraisal</a>
+      <a href="{{ url_for('appraisal.employee_list_appraisals') }}" class="btn btn-secondary">View My Appraisals</a>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+  </div>
+</div>
+{% endblock %}

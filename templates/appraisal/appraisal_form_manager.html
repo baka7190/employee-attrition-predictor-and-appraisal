@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% block title %}Manager Review{% endblock %}
+
+{% block head %}
+<style>
+  body{background:linear-gradient(180deg,#f6f9ff 0%,#fff 100%)!important}
+  .page-wrap{max-width:1100px;margin:auto}
+  .soft-card{border:0;border-radius:18px;box-shadow:0 10px 40px rgba(13,110,253,.08)}
+  .section-title{font-weight:800;letter-spacing:.2px}
+  .muted{color:#6c757d}
+  .form-control,.form-select{border-radius:12px}
+  .form-control-sm,.form-select-sm{border-radius:10px}
+  .table-clean thead th{color:#6c757d;font-weight:700;border-bottom:1px solid #e9ecef}
+  .table-clean tbody tr:hover{background:#f8fbff}
+  .sticky-submit{position:sticky;bottom:0;z-index:5;background:rgba(246,249,255,.9);backdrop-filter:blur(4px);border-top:1px solid #e9ecef;padding:.75rem 1rem;border-bottom-left-radius:18px;border-bottom-right-radius:18px;display:flex;justify-content:flex-end;gap:.5rem}
+  .ro-chip{font-size:.75rem;color:#6c757d}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-wrap">
+    <div class="soft-card card">
+      <div class="card-body">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="section-title mb-0"><i class="bi bi-clipboard2-data me-2"></i>Manager Review</h4>
+          <span class="badge text-bg-secondary">Employee: {{ employee.full_name if employee and employee.full_name else (employee.username if employee else appraisal.employee_id) }}</span>
+        </div>
+        <div class="muted mb-3">This mirrors the employee form. Employee entries are read-only; manager sections are open.</div>
+
+        <!-- FORM -->
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+
+          <!-- A. Staff Information -->
+          <h5 class="section-title mb-2">A. Staff Information</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Employee name</label>
+              {{ form.employee_name(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">HOD name</label>
+              {{ form.hod_name(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Position</label>
+              {{ form.position_title(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Department</label>
+              {{ form.department_name(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Entry date to DWU</label>
+              {{ form.entry_date(class="form-control form-control-sm", type="date", readonly=True) }}
+            </div>
+
+            <!-- Supervisor meta (manager can edit) -->
+            <div class="col-md-4">
+              <label class="form-label">Head of Department (position)</label>
+              {{ form.hod_position(class="form-control form-control-sm") }}
+              <div class="ro-chip mt-1"><i class="bi bi-pencil-square"></i> Manager completes</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Length supervising (Years / Months)</label>
+              <div class="d-flex gap-2">
+                {{ form.supervise_years(class="form-control form-control-sm") }}
+                {{ form.supervise_months(class="form-control form-control-sm") }}
+              </div>
+              <div class="ro-chip mt-1"><i class="bi bi-pencil-square"></i> Manager completes</div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- B. Period covered (read-only) -->
+          <h5 class="section-title mb-2">B. Period Covered by this Evaluation</h5>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">{{ form.period_start.label.text }}</label>
+              {{ form.period_start(class="form-control form-control-sm", type="date", readonly=True) }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ form.period_end.label.text }}</label>
+              {{ form.period_end(class="form-control form-control-sm", type="date", readonly=True) }}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- C. Time & Effort (read-only) -->
+          <h5 class="section-title mb-2">C. Percentage of Time and Effort</h5>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Teaching &amp; learning %</label>
+              {{ form.teaching_percent(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Research &amp; publication %</label>
+              {{ form.research_percent(class="form-control form-control-sm", readonly=True) }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Other commitments %</label>
+              {{ form.other_percent(class="form-control form-control-sm", readonly=True) }}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- D. Publications (read-only) -->
+          <h5 class="section-title mb-2">D. Publications (2020–2024)</h5>
+          {{ form.publications_2020_2024(class="form-control", rows="3", readonly=True) }}
+
+          <hr class="my-4">
+
+          <!-- E. Teaching Workload — Semester 2 -->
+          <h5 class="section-title mb-1">E. Teaching Workload — Semester 2, {{ form.eval_year.data }}</h5>
+          <div class="table-responsive">
+            <table class="table table-clean align-middle">
+              <thead>
+                <tr>
+                  <th style="width:120px">Unit code</th>
+                  <th>Unit name</th>
+                  <th style="width:90px">Group</th>
+                  <th style="width:130px">No. of students</th>
+                  <th style="width:260px">Session type</th>
+                  <th style="width:120px">Hours / week</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in form.teach_s2 %}
+                <tr>
+                  <td>{{ r.unit_code(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.unit_name(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.group_name(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.num_students(class="form-control form-control-sm", type="number", readonly=True) }}</td>
+                  <td>{{ r.session_type(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.hours_per_week(class="form-control form-control-sm", type="number", readonly=True) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- F. Teaching Workload — Semester 1 -->
+          <h5 class="section-title mb-1">F. Teaching Workload — Semester 1, {{ form.eval_year.data }}</h5>
+          <div class="table-responsive">
+            <table class="table table-clean align-middle">
+              <thead>
+                <tr>
+                  <th style="width:120px">Unit code</th>
+                  <th>Unit name</th>
+                  <th style="width:90px">Group</th>
+                  <th style="width:130px">No. of students</th>
+                  <th style="width:260px">Session type</th>
+                  <th style="width:120px">Hours / week</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in form.teach_s1 %}
+                <tr>
+                  <td>{{ r.unit_code(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.unit_name(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.group_name(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.num_students(class="form-control form-control-sm", type="number", readonly=True) }}</td>
+                  <td>{{ r.session_type(class="form-control form-control-sm", readonly=True) }}</td>
+                  <td>{{ r.hours_per_week(class="form-control form-control-sm", type="number", readonly=True) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- G. Key Duties or Tasks (manager rates; examples editable) -->
+          <h5 class="section-title mb-1">G. Key Duties or Tasks</h5>
+          <p class="muted small mb-3">Rate 1–5 and edit/confirm examples as needed.</p>
+
+          <div class="table-responsive">
+            <table class="table table-clean table-hover align-middle">
+              <thead>
+                <tr>
+                  <th style="width:52%">Duty / Task</th>
+                  <th style="width:150px">Rating (1–5)</th>
+                  <th>Example / Evidence</th>
+                </tr>
+              </thead>
+              <tbody id="dutiesBody">
+                {% for row in form.scores %}
+                  {% set label = criteria_by_id.get(row.criteria_id.data, 'Criterion') %}
+                  <tr class="score-row">
+                    {{ row.criteria_id(type="hidden") }}
+                    <td class="align-top"><span class="fw-semibold duty-label">{{ label }}</span></td>
+                    <td class="align-top">
+                      {{ row.rating(class="form-select form-select-sm") }}
+                    </td>
+                    <td class="align-top">
+                      {{ row.example_text(class="form-control form-control-sm duty-example", rows="2", placeholder="Brief example / evidence") }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- H. Personal Skills & Attributes -->
+          <h5 class="section-title mb-1">H. Personal Skills &amp; Attributes</h5>
+          <p class="muted small mb-3">This section is reflected in the criteria ratings above.</p>
+
+          <hr class="my-4">
+
+          <!-- I. Comments -->
+          <h5 class="section-title mb-2">I. Comments</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Employee comment</label>
+              {{ form.employee_comment(class="form-control", rows="4", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Supervisor comment</label>
+              {{ form.supervisor_comments(class="form-control", rows="4", placeholder="Summarize performance, strengths, and development areas") }}
+            </div>
+          </div>
+
+          <!-- J. Signatures -->
+          <h5 class="section-title mt-4 mb-2">J. Signatures</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Employee's signature</label>
+              {{ form.employee_signature(class="form-control", readonly=True) }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Date</label>
+              {{ form.employee_sign_date(class="form-control form-control-sm", type="date", readonly=True) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Supervisor signature</label>
+              {{ form.supervisor_signature(class="form-control form-control-sm") }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Date</label>
+              {{ form.supervisor_sign_date(class="form-control form-control-sm", type="date") }}
+            </div>
+          </div>
+
+          <div class="sticky-submit mt-3">
+            <a href="{{ url_for('appraisal.manager_list') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <button type="button" class="btn btn-outline-secondary" onclick="autoFillManager(false)">
+              <i class="bi bi-magic"></i> Auto-fill (Manager)
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="autoFillManager(true)">
+              <i class="bi bi-stars"></i> Auto-fill &amp; Submit to HR
+            </button>
+            <button class="btn btn-primary">
+              <i class="bi bi-send me-1"></i> Save &amp; Submit to HR
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Helpers
+  function setVal(el, v){
+    if(!el) return;
+    el.value = v;
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+    el.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+  function byName(n){ return document.querySelector('[name="'+n+'"]'); }
+
+  // Auto-fill everything a manager needs; optionally submit.
+  function autoFillManager(submitNow){
+    // A. Manager-only meta
+    setVal(byName('{{ form.hod_position.name }}'), 'Head of Department, Computing');
+    setVal(byName('{{ form.supervise_years.name }}'), '2');
+    setVal(byName('{{ form.supervise_months.name }}'), '6');
+
+    // G. Ratings (mix of 4 and 5 to look realistic)
+    const ratingSelects = document.querySelectorAll('select[name^="scores-"][name$="-rating"]');
+    ratingSelects.forEach((s, i) => {
+      const val = (i % 4 === 0) ? '5' : '4';
+      setVal(s, val);
+    });
+
+    // G. Examples – add a verification note if empty
+    document.querySelectorAll('textarea[name^="scores-"][name$="-example_text"]').forEach(a=>{
+      const base = 'Evidence reviewed (LMS artifacts, assessment samples, attendance/consultation logs). Performance meets or exceeds expectations.';
+      if(!a.value || !a.value.trim()){
+        setVal(a, base);
+      }else if(!/Evidence reviewed/i.test(a.value)){
+        setVal(a, a.value.trim() + ' — Evidence reviewed and verified.');
+      }
+    });
+
+    // I. Supervisor comment
+    const supNote = 'Overall performance is above expectations. Strong delivery across teaching, dependable execution, and tangible research outputs. Recommend advanced pedagogy workshop and continued leadership in curriculum design.';
+    setVal(byName('{{ form.supervisor_comments.name }}'), supNote);
+
+    // J. Supervisor signature + date
+    setVal(byName('{{ form.supervisor_signature.name }}'), 'Michael A. (HOD)');
+    setVal(byName('{{ form.supervisor_sign_date.name }}'), new Date().toISOString().slice(0,10));
+
+    if(submitNow){
+      // submit to HR
+      document.querySelector('form').submit();
+    }
+  }
+</script>
+{% endblock %}

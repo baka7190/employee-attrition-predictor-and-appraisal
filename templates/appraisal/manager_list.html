@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Manager · Appraisals{% endblock %}
+
+{% block head %}
+<style>
+  .wrap{max-width:1160px;margin:auto}
+  .soft{border:1px solid #e9ecef;border-radius:16px;box-shadow:0 10px 30px rgba(13,110,253,.06)}
+  .kpi .card-body{padding:14px 16px}
+  .kpi .value{font-size:1.5rem;font-weight:800}
+  .kpi .sub{color:#6c757d;font-size:.85rem}
+  .badge-pill{border-radius:999px}
+  .table thead th{font-weight:700;color:#6c757d;border-bottom:1px solid #e9ecef}
+  .empty{border:1px dashed #ced4da;border-radius:12px;padding:18px;color:#6c757d;text-align:center}
+  .toolbar .form-select,.toolbar .form-control{border-radius:10px}
+  .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:.4rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="wrap">
+
+    <!-- Header + quick actions -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <h4 class="mb-0 d-flex align-items-center gap-2"><i class="bi bi-clipboard-check"></i> Team Appraisals</h4>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('appraisal.manager_pending') }}" class="btn btn-outline-warning btn-sm"><i class="bi bi-hourglass-split"></i> Pending</a>
+        <a href="{{ url_for('appraisal.manager_completed') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-check-circle"></i> Completed</a>
+        <a href="{{ url_for('appraisal.manager_reports_pdf') }}" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> Export PDF</a>
+        <a href="{{ url_for('appraisal.manager_reports_excel') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+      </div>
+    </div>
+
+    {# derive counts by status #}
+    {% set ns = namespace(pending=0, submitted=0, returned=0, finalized=0) %}
+    {% for a in appraisals %}
+      {% set S = a.status.name if a.status else 'DRAFT' %}
+      {% if S == 'SUBMITTED_TO_MANAGER' %}{% set ns.pending   = ns.pending + 1 %}{% endif %}
+      {% if S == 'MANAGER_SUBMITTED'   %}{% set ns.submitted = ns.submitted + 1 %}{% endif %}
+      {% if S in ['REJECTED']          %}{% set ns.returned  = ns.returned + 1 %}{% endif %}
+      {% if S in ['HR_REVIEWED','APPROVED'] %}{% set ns.finalized = ns.finalized + 1 %}{% endif %}
+    {% endfor %}
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card kpi soft"><div class="card-body">
+          <div class="sub">Needs Your Review</div>
+          <div class="value">{{ ns.pending }}</div>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi soft"><div class="card-body">
+          <div class="sub">Awaiting HR (Submitted)</div>
+          <div class="value">{{ ns.submitted }}</div>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi soft"><div class="card-body">
+          <div class="sub">Returned by HR</div>
+          <div class="value">{{ ns.returned }}</div>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi soft"><div class="card-body">
+          <div class="sub">Finalized (Team)</div>
+          <div class="value">{{ ns.finalized }}</div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="card soft mb-3">
+      <div class="card-body d-flex flex-wrap align-items-center gap-2 toolbar">
+        <div class="input-group input-group-sm" style="max-width:320px">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="q" type="search" class="form-control" placeholder="Search by employee name or ID">
+        </div>
+        <select id="statusFilter" class="form-select form-select-sm" style="max-width:220px">
+          <option value="">All statuses</option>
+          <option value="SUBMITTED_TO_MANAGER">Submitted to Manager</option>
+          <option value="MANAGER_SUBMITTED">Awaiting HR</option>
+          <option value="HR_REVIEWED">HR Reviewed</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Returned by HR</option>
+          <option value="DRAFT">Draft</option>
+        </select>
+        <div class="ms-auto d-flex gap-2">
+          <a href="{{ url_for('appraisal.manager_pending') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-inbox"></i> Open Inbox</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs (client-side filters) -->
+    <ul class="nav nav-pills small mb-2" id="tabPills">
+      <li class="nav-item"><a class="nav-link active" data-status="">All</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="SUBMITTED_TO_MANAGER">Pending ({{ ns.pending }})</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="MANAGER_SUBMITTED">Awaiting HR ({{ ns.submitted }})</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="REJECTED">Returned ({{ ns.returned }})</a></li>
+      <li class="nav-item"><a class="nav-link" data-status="APPROVED">Finalized ({{ ns.finalized }})</a></li>
+    </ul>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle" id="mgrTable">
+        <thead>
+          <tr>
+            <th style="width:80px">ID</th>
+            <th>Employee</th>
+            <th style="width:220px">Period</th>
+            <th style="width:90px">Total</th>
+            <th style="width:160px">Status</th>
+            <th style="width:320px" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in appraisals %}
+          {% set S = a.status.name if a.status else 'DRAFT' %}
+          {% set employee_name = (a.employee.username if a.employee is defined and a.employee else ('ID ' ~ a.employee_id)) %}
+          <tr data-status="{{ S }}" data-name="{{ employee_name|lower }}">
+            <td class="text-muted">#{{ a.id }}</td>
+            <td>{{ employee_name }}</td>
+            <td class="text-nowrap">{{ a.period_start }} → {{ a.period_end }}</td>
+            <td class="fw-semibold">{{ a.total_score or 0 }}</td>
+            <td>
+              {% set badge = 'secondary' %}
+              {% if S == 'SUBMITTED_TO_MANAGER' %}{% set badge='warning'   %}{% endif %}
+              {% if S == 'MANAGER_SUBMITTED'   %}{% set badge='info'      %}{% endif %}
+              {% if S == 'HR_REVIEWED'         %}{% set badge='primary'   %}{% endif %}
+              {% if S == 'APPROVED'            %}{% set badge='success'   %}{% endif %}
+              {% if S == 'REJECTED'            %}{% set badge='danger'    %}{% endif %}
+              <span class="badge badge-pill text-bg-{{ badge }}">{{ S.replace('_',' ')|title }}</span>
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <a class="btn btn-outline-primary" href="{{ url_for('appraisal.manager_review', appraisal_id=a.id) }}"><i class="bi bi-pencil-square"></i> Review</a>
+                <a class="btn btn-outline-warning" href="{{ a.return_url or '#' }}"><i class="bi bi-arrow-counterclockwise"></i> Return</a>
+                <a class="btn btn-success" href="{{ a.submit_url or url_for('appraisal.manager_review', appraisal_id=a.id) }}"><i class="bi bi-send-check"></i> Submit to HR</a>
+              </div>
+
+              <form method="POST"
+                    action="{{ url_for('appraisal.delete_appraisal', appraisal_id=a.id) }}"
+                    class="d-inline ms-1"
+                    onsubmit="return confirm('Delete appraisal #{{ a.id }} for {{ employee_name }}? This cannot be undone.');">
+                {# If you use CSRF, include your token here: #}
+                {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6">
+            <div class="empty">Nothing to review.</div>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Legend -->
+    <div class="small text-muted mt-2">
+      <span class="status-dot" style="background:#ffc107"></span>Submitted to Manager
+      <span class="status-dot" style="background:#0dcaf0;margin-left:10px"></span>Awaiting HR
+      <span class="status-dot" style="background:#0d6efd;margin-left:10px"></span>HR Reviewed
+      <span class="status-dot" style="background:#198754;margin-left:10px"></span>Approved
+      <span class="status-dot" style="background:#dc3545;margin-left:10px"></span>Returned by HR
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // client-side filters (search + status)
+  const q = document.getElementById('q');
+  const statusSel = document.getElementById('statusFilter');
+  const rows = Array.from(document.querySelectorAll('#mgrTable tbody tr'));
+  const pills = Array.from(document.querySelectorAll('#tabPills .nav-link'));
+
+  function applyFilters(){
+    const term = (q && q.value || '').toLowerCase();
+    const statusA = (statusSel && statusSel.value) || '';
+    const statusB = (document.querySelector('#tabPills .nav-link.active')?.getAttribute('data-status')) || '';
+    rows.forEach(tr=>{
+      const name = (tr.getAttribute('data-name')||'').toLowerCase();
+      const st = tr.getAttribute('data-status')||'';
+      const statusOk = (!statusA || st===statusA) && (!statusB || st===statusB);
+      const textOk = !term || name.includes(term) || tr.textContent.toLowerCase().includes(term);
+      tr.style.display = (statusOk && textOk) ? '' : 'none';
+    });
+  }
+  q && q.addEventListener('input', applyFilters);
+  statusSel && statusSel.addEventListener('change', applyFilters);
+  pills.forEach(p=>p.addEventListener('click', ()=>{
+    pills.forEach(x=>x.classList.remove('active')); p.classList.add('active'); applyFilters();
+  }));
+  applyFilters();
+</script>
+{% endblock %}

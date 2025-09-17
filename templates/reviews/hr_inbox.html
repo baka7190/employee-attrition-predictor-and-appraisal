@@ -1,0 +1,15 @@
+<h2>HR Inbox – Waiting</h2>
+<ul>
+  {% for x in waiting %}
+    <li>{{ x.employee.username }} ({{ x.period_start }}–{{ x.period_end }})
+      <a href="{{ url_for('reviews.hr_review', review_id=x.id) }}">Open</a>
+    </li>
+  {% else %}<li>Nothing pending.</li>{% endfor %}
+</ul>
+
+<h2>HR – Decided</h2>
+<ul>
+  {% for x in decided %}
+    <li>{{ x.employee.username }} – {{ x.status.value }}</li>
+  {% else %}<li>No decisions yet.</li>{% endfor %}
+</ul>

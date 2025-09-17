@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- Title -->
+  <h2 class="dashboard-header mb-4">
+    <i class="bi bi-pencil-square"></i>
+    Review Appraisal for
+    {{ appraisal.employee.username if appraisal.employee is defined and appraisal.employee else ('ID ' ~ appraisal.employee_id) }}
+  </h2>
+
+  <form method="POST" action="{{ url_for('appraisal.manager_review', appraisal_id=appraisal.id) }}">
+    {{ form.hidden_tag() }}
+
+    <!-- Period -->
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Period Start</label>
+        <input type="text" class="form-control" value="{{ appraisal.period_start }}" readonly>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Period End</label>
+        <input type="text" class="form-control" value="{{ appraisal.period_end }}" readonly>
+      </div>
+    </div>
+
+    <!-- Employee Comment -->
+    <div class="mb-3">
+      <label class="form-label">Employee Comment</label>
+      <textarea class="form-control" rows="3" readonly>{{ appraisal.employee_comment }}</textarea>
+    </div>
+
+    <!-- Criteria Scores -->
+    <h5 class="mt-4">Performance Criteria</h5>
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Criterion</th>
+            <th style="width:180px">Rating</th>
+            <th>Illustrative Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for score_form in form.scores %}
+          <tr>
+            <td>
+              <!-- ensure criteria_id posts back -->
+              <input type="hidden"
+                     name="{{ score_form.criteria_id.name }}"
+                     value="{{ score_form.criteria_id.data }}">
+              {{ criteria_by_id.get(score_form.criteria_id.data, score_form.criteria_id.data) }}
+            </td>
+            <td>{{ score_form.rating(class="form-select") }}</td>
+            <td>{{ score_form.example_text(class="form-control") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Supervisor Comment -->
+    <div class="mb-3">
+      {{ form.supervisor_comment.label(class="form-label") }}
+      {{ form.supervisor_comment(class="form-control", rows="3") }}
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-between mt-4">
+      <a href="{{ url_for('appraisal.manager_pending') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back
+      </a>
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-send-check"></i> Save &amp; Send to HR
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

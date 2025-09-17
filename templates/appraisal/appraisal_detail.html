@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Appraisal Detail ({{ role|capitalize }})</h2>
+
+  <p><strong>Period:</strong> {{ appraisal.period_start }} → {{ appraisal.period_end }}</p>
+  <p><strong>Employee Comment:</strong> {{ appraisal.employee_comment or "N/A" }}</p>
+  <p><strong>Supervisor Comment:</strong> {{ appraisal.supervisor_comment or "Pending" }}</p>
+  <p><strong>Total Score:</strong> {{ appraisal.total_score or "Pending" }}</p>
+
+  {% if appraisal.workload %}
+  <h4>Workload</h4>
+  <ul>
+    <li>Teaching: {{ appraisal.workload.teaching_percent }}%</li>
+    <li>Research: {{ appraisal.workload.research_percent }}%</li>
+    <li>Other: {{ appraisal.workload.other_percent }}%</li>
+  </ul>
+  {% endif %}
+
+  <h4>Criteria Ratings</h4>
+  <ul>
+  {% for score in appraisal.scores %}
+    <li>
+      <strong>Criteria ID {{ score.criteria_id }}:</strong> Rating {{ score.rating }}  
+      <br>
+      Example: {{ score.example_text or "N/A" }}
+    </li>
+  {% endfor %}
+  </ul>
+
+  {% if role == "manager" %}
+  <a href="{{ url_for('appraisal.manager_review', appraisal_id=appraisal.id) }}"
+     class="btn btn-warning">Add Review</a>
+  {% endif %}
+</div>
+{% endblock %}

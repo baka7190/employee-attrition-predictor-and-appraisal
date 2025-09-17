@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title or 'Pending Appraisals' }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <h4 class="mb-3 d-flex align-items-center gap-2">
+    <i class="bi bi-hourglass-split"></i>
+    {{ page_title or 'Pending Appraisals' }}
+  </h4>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Employee</th>
+          <th style="width:220px">Status</th>
+          <th style="width:320px">Period</th>
+          <th style="width:160px">Submitted On</th>
+          <th style="width:140px" class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appraisals %}
+          {% set S = a.status.name if a.status else 'DRAFT' %}
+          {% set badge = 'secondary' %}
+          {% if S == 'SUBMITTED_TO_MANAGER' %}{% set badge = 'info' %}{% endif %}
+          {% if S == 'MANAGER_SUBMITTED'    %}{% set badge = 'warning' %}{% endif %}
+          {% if S == 'HR_REVIEWED'          %}{% set badge = 'primary' %}{% endif %}
+          {% if S == 'APPROVED'             %}{% set badge = 'success' %}{% endif %}
+          {% if S == 'REJECTED'             %}{% set badge = 'danger' %}{% endif %}
+
+          <tr>
+            <td>{{ (a.employee.username if a.employee) or ('ID ' ~ a.employee_id) }}</td>
+            <td>
+              <span class="badge text-bg-{{ badge }}">{{ S.replace('_',' ')|title }}</span>
+            </td>
+            <td class="text-nowrap">
+              {{ a.period_start or '—' }} → {{ a.period_end or '—' }}
+            </td>
+            <td class="text-nowrap">
+              {{ (a.created_at.date() if a.created_at else '') or '—' }}
+            </td>
+            <td class="text-end">
+              {% if S == 'SUBMITTED_TO_MANAGER' %}
+                <a href="{{ url_for('appraisal.manager_review', appraisal_id=a.id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-pencil-square"></i> Review
+                </a>
+              {% else %}
+                <a href="{{ url_for('appraisal.manager_review', appraisal_id=a.id) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-box-arrow-up-right"></i> Open
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="5" class="text-muted">No pending items.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary mt-2">
+    ← Back to Dashboard
+  </a>
+</div>
+{% endblock %}

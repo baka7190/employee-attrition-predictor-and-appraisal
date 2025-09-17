@@ -1,0 +1,818 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+  :root{
+    --frame: 1px solid #eaeef3;
+    --shadow: 0 10px 30px rgba(16,24,40,.06);
+    --text-muted: #6b7280;
+  }
+  .page { max-width: 1280px; }
+  .hero {
+    border-radius: 18px;
+    padding: 18px 18px 0 18px;
+    background: radial-gradient(1200px 480px at 0% -10%, rgba(13,110,253,.10), transparent 60%),
+                linear-gradient(180deg, #fff, #fafbfc);
+    border: var(--frame);
+    box-shadow: var(--shadow);
+  }
+  .hero .title { font-weight: 800; letter-spacing:.2px }
+  .subtle { color: var(--text-muted) }
+
+  /* Cards */
+  .card.pro { border: var(--frame); border-radius: 16px; box-shadow: var(--shadow); }
+  .card-header { background: #fff; }
+  .kpi .value { font-size: 1.9rem; font-weight: 800; letter-spacing:.3px }
+  .kpi .label { font-size: .9rem; color: var(--text-muted); }
+  .kpi .delta { font-size:.8rem; }
+
+  /* Boards */
+  .board-col { min-height: 280px; }
+  .ticket {
+    border: 1px solid #edf1f6; border-radius: 12px; padding: 10px 12px; background:#fff;
+    display:flex; align-items:start; gap:.75rem;
+  }
+  .ticket + .ticket { margin-top:10px }
+  .dot { width:10px; height:10px; border-radius:999px; display:inline-block }
+
+  /* Tables */
+  .table thead th { font-weight:700; color:#6b7280; border-bottom:1px solid #eaeef3 }
+  .empty {
+    border: 1px dashed #d5dbe4; border-radius: 14px; padding: 22px; text-align:center; color: var(--text-muted);
+  }
+
+  /* Utilities */
+  .chip { border:1px solid #eaeef3; border-radius:999px; padding:.35rem .7rem; }
+  .chart-h { height: 320px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container page py-3">
+
+  <!-- HERO / TOOLBAR -->
+  <div class="hero mb-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between">
+      <div class="py-2">
+        <h3 class="title mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-speedometer2"></i> Manager Dashboard
+        </h3>
+        <div class="subtle small mt-1">
+          Your snapshot of team attrition risk and appraisal progress.
+          <span class="ms-2 chip bg-light"><i class="bi bi-calendar-week me-1"></i>{{ date_range or 'This Month' }}</span>
+        </div>
+      </div>
+      <div class="d-flex gap-2 py-2">
+        <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+          <i class="bi bi-sliders"></i> Filters
+        </button>
+        <div class="dropdown-menu dropdown-menu-end p-3" style="min-width:320px">
+          <div class="small text-muted mb-2">Quick filters</div>
+          <div class="row g-2">
+            <div class="col-6">
+              <select id="rangeSelect" class="form-select form-select-sm">
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last 12 months</option>
+                <option value="all">All time</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <select id="roleSelect" class="form-select form-select-sm">
+                <option value="">All roles</option>
+                {% for r in role_labels|default([]) %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <input id="searchInput" class="form-control form-control-sm mt-3" placeholder="Search team (name or ID)">
+        </div>
+
+        <button class="btn btn-outline-success" data-bs-toggle="offcanvas" data-bs-target="#csvCanvas">
+          <i class="bi bi-file-earmark-spreadsheet"></i> Batch Upload
+        </button>
+        <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickPredictModal">
+          <i class="bi bi-lightning-charge"></i> Quick Prediction
+        </a>
+      </div>
+    </div>
+
+    <!-- Top KPI strip -->
+    <div class="row g-3 mt-1">
+      <div class="col-6 col-md-3">
+        <div class="card pro kpi h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width:42px;height:42px">
+              <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+              <div class="label">Team Members</div>
+              <div class="value">{{ team_count or 0 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card pro kpi h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width:42px;height:42px">
+              <i class="bi bi-exclamation-octagon-fill"></i>
+            </div>
+            <div>
+              <div class="label">Likely to Leave</div>
+              <div class="value text-danger">{{ likely_leave or 0 }}</div>
+              <div class="delta subtle">of {{ (team_count or 0) }} total</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card pro kpi h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width:42px;height:42px">
+              <i class="bi bi-shield-check"></i>
+            </div>
+            <div>
+              <div class="label">Not Likely to Leave</div>
+              <div class="value text-success">{{ not_likely or 0 }}</div>
+              <div class="delta subtle">healthy segment</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card pro kpi h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width:42px;height:42px">
+              <i class="bi bi-clipboard-check"></i>
+            </div>
+            <div>
+              <div class="label">Pending Appraisals</div>
+              <div class="value">{{ pending_appraisals or 0 }}</div>
+              <a class="small" href="{{ url_for('appraisal.manager_pending') }}">View queue</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /hero -->
+
+  <!-- ==================== ROW A: ATTRITION INSIGHTS ==================== -->
+  <div class="row g-3 mt-2">
+    <div class="col-lg-8">
+      <div class="card pro">
+        <div class="card-header fw-bold d-flex align-items-center justify-content-between">
+          Attrition · Snapshot <span class="subtle small">live distribution</span>
+        </div>
+        <div class="card-body"><div class="chart-h"><canvas id="barChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card pro h-100">
+        <div class="card-header fw-bold d-flex align-items-center justify-content-between">
+          High-Risk Watchlist <span class="subtle small">top 5</span>
+        </div>
+        <div class="card-body">
+          {% set watch = (high_risk|default([]))[:5] %}
+          {% if watch %}
+            <div class="list-group list-group-flush">
+              {% for w in watch %}
+              <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <div>
+                  <div class="fw-semibold">{{ w.username or ('ID ' ~ w.user_id) }}</div>
+                  <div class="small subtle">{{ w.job_role or '—' }}</div>
+                </div>
+                <span class="badge text-bg-danger">{{ (w.confidence*100)|round(0) if w.confidence is defined else 0 }}%</span>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">No high-risk employees right now.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ROW B: TRENDS & BREAKDOWNS ==================== -->
+  <div class="row g-3 mt-1">
+    <div class="col-lg-8">
+      <div class="card pro">
+        <div class="card-header fw-bold d-flex align-items-center justify-content-between">
+          Trend & Confidence <span class="subtle small">last period</span>
+        </div>
+        <div class="card-body"><div class="chart-h"><canvas id="timelineChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card pro">
+        <div class="card-header fw-bold">Overtime vs Risk</div>
+        <div class="card-body"><div class="chart-h"><canvas id="otChart"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ROW C: APPRAISALS WORKSPACE ==================== -->
+  <div class="card pro mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="fw-bold"><i class="bi bi-kanban me-1"></i> Appraisals · Workspace</div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('appraisal.manager_list') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-list-task"></i> View All</a>
+        <a href="{{ url_for('appraisal.manager_pending') }}" class="btn btn-outline-warning btn-sm"><i class="bi bi-hourglass-split"></i> Pending</a>
+        <a href="{{ url_for('appraisal.manager_completed') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-check2-circle"></i> Completed</a>
+        <a href="{{ url_for('appraisal.manager_reports_pdf') }}" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        <a href="{{ url_for('appraisal.manager_reports_excel') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Column 1: Awaiting HR (submitted by manager) -->
+        <div class="col-lg-4">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-bold">Awaiting HR</div>
+            <a class="small" href="{{ url_for('appraisal.manager_submitted') }}">View</a>
+          </div>
+          <div class="board-col">
+            {% set submitted = awaiting_hr_items|default([]) %}
+            {% if submitted %}
+              {% for a in submitted[:6] %}
+              <div class="ticket">
+                <span class="dot bg-warning"></span>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ a.employee_name or ('ID ' ~ a.employee_id) }}</div>
+                  <div class="small subtle">{{ a.period_start or '—' }} → {{ a.period_end or '—' }}</div>
+                </div>
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('appraisal.manager_review', appraisal_id=a.id) }}">Open</a>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty">No items awaiting HR.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Column 2: Returned by HR -->
+        <div class="col-lg-4">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-bold">Returned by HR</div>
+            <a class="small" href="{{ url_for('appraisal.manager_pending') }}">Fix now</a>
+          </div>
+          <div class="board-col">
+            {% set returned = hr_returned_items|default([]) %}
+            {% if returned %}
+              {% for a in returned[:6] %}
+              <div class="ticket">
+                <span class="dot bg-danger"></span>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ a.employee_name or ('ID ' ~ a.employee_id) }}</div>
+                  <div class="small subtle">Reason: {{ a.hr_note or '—' }}</div>
+                </div>
+                <a class="btn btn-sm btn-outline-primary" href="{{ a.review_url or url_for('appraisal.manager_pending') }}">Open</a>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty">Nothing returned by HR.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Column 3: Recently Finalized -->
+        <div class="col-lg-4">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-bold">Recently Finalized</div>
+            <span class="small subtle">team</span>
+          </div>
+          <div class="board-col">
+            {% set fin = team_finalized|default([]) %}
+            {% if fin %}
+              {% for a in fin[:6] %}
+              <div class="ticket">
+                <span class="dot bg-success"></span>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ a.employee_name or ('ID ' ~ a.employee_id) }}</div>
+                  <div class="small subtle">{{ a.period_start or '—' }} → {{ a.period_end or '—' }}</div>
+                </div>
+                <span class="badge text-bg-success">{{ a.total_score or '—' }}</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty">No finalized appraisals yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ROW D: TEAM PREDICTIONS TABLE ==================== -->
+  <div class="card pro mt-3">
+    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+      Team Predictions
+      <div class="d-flex align-items-center gap-2">
+        <span class="subtle small">Latest per employee</span>
+        <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm"><i class="bi bi-graph-up"></i> Make a Prediction</a>
+      </div>
+    </div>
+    <div class="card-body">
+      {% if team_predictions and team_predictions|length > 0 %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="teamTable">
+            <thead>
+              <tr>
+                <th style="width:80px">ID</th>
+                <th>Employee</th>
+                <th>Job Role</th>
+                <th style="width:140px">Risk</th>
+                <th style="width:140px">Confidence</th>
+                <th style="width:140px">Appraisal Score</th>
+                <th style="width:180px">Last Predicted</th>
+                <th style="width:110px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in team_predictions %}
+              {% set risk_label = 'Likely to Leave' if p.result == 1 else 'Not Likely' %}
+              <tr data-role="{{ p.job_role|default('') }}" data-name="{{ p.username|default('')|lower }}">
+                <td class="text-muted">#{{ p.user_id }}</td>
+                <td>{{ p.username|default('Employee ' ~ p.user_id) }}</td>
+                <td>{{ p.job_role|default('—') }}</td>
+                <td><span class="badge {% if p.result == 1 %}text-bg-danger{% else %}text-bg-success{% endif %} px-3 py-2">{{ risk_label }}</span></td>
+                <td>{{ (p.confidence*100)|round(1) if p.confidence is defined else '—' }}{% if p.confidence is defined %}%{% endif %}</td>
+                <td>{{ p.appraisal_score|default('—') }}</td>
+                <td class="text-muted">{{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at is defined else '—' }}</td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <a class="btn btn-outline-secondary" href="{{ url_for('predict') }}"><i class="bi bi-arrow-repeat"></i></a>
+                    <a class="btn btn-outline-primary" href="{{ url_for('appraisal.manager_list') }}"><i class="bi bi-clipboard-check"></i></a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty">No predictions for your team yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+<!-- ==================== PROFILE MODAL ==================== -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="border:0;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.08)">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-circle me-2"></i> My Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pf-overview-tab" data-bs-toggle="tab" data-bs-target="#pf-overview" type="button" role="tab">Overview</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pf-edit-tab" data-bs-toggle="tab" data-bs-target="#pf-edit" type="button" role="tab">Edit</button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- Overview -->
+          <div class="tab-pane fade show active" id="pf-overview" role="tabpanel" aria-labelledby="pf-overview-tab">
+            <div class="row g-3">
+              <div class="col-12 col-lg-4">
+                <div class="card h-100">
+                  <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width:64px;height:64px;background:#eef2ff;font-weight:700;">
+                      {{ (current_user.name
+                          or current_user.full_name
+                          or current_user.fullname
+                          or current_user.display_name
+                          or ((current_user.first_name ~ ' ' ~ current_user.last_name).strip() if (current_user.first_name or current_user.last_name) else None)
+                          or current_user.username
+                          or 'U')[:1] | upper }}
+                    </div>
+                    <div>
+                      <div class="h5 mb-0">
+                        {{ current_user.name
+                           or current_user.full_name
+                           or current_user.fullname
+                           or current_user.display_name
+                           or ((current_user.first_name ~ ' ' ~ current_user.last_name).strip() if (current_user.first_name or current_user.last_name) else None)
+                           or current_user.username
+                           or 'User' }}
+                      </div>
+                      <div class="text-muted">{{ current_user.email or '—' }}</div>
+                      {% if current_user.role %}<span class="badge bg-secondary mt-2">{{ role_str(current_user.role)|upper }}</span>{% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-8">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="row gy-2">
+
+                      <!-- Employee ID -->
+                      <div class="col-12 col-md-6">
+                        <div class="form-floating">
+                          <input class="form-control"
+                                 value="{{ current_user.employee_id
+                                          or current_user.emp_id
+                                          or current_user.employeeId
+                                          or current_user.staff_id
+                                          or current_user.staffId
+                                          or current_user.id
+                                          or '—' }}"
+                                 disabled>
+                          <label>Employee ID</label>
+                        </div>
+                      </div>
+
+                      <!-- Department -->
+                      <div class="col-12 col-md-6">
+                        <div class="form-floating">
+                          <input class="form-control"
+                                 value="{{ current_user.department
+                                          or current_user.dept
+                                          or current_user.department_name
+                                          or current_user.departmentName
+                                          or '—' }}"
+                                 disabled>
+                          <label>Department</label>
+                        </div>
+                      </div>
+
+                      <!-- Job Title -->
+                      <div class="col-12 col-md-6">
+                        <div class="form-floating">
+                          <input class="form-control"
+                                 value="{{ current_user.title
+                                          or current_user.job_title
+                                          or current_user.jobTitle
+                                          or current_user.position
+                                          or '—' }}"
+                                 disabled>
+                          <label>Job Title</label>
+                        </div>
+                      </div>
+
+                      <!-- Manager -->
+                      <div class="col-12 col-md-6">
+                        <div class="form-floating">
+                          <input class="form-control"
+                                 value="{{ current_user.manager_name
+                                          or current_user.supervisor_name
+                                          or current_user.manager
+                                          or current_user.supervisor
+                                          or '—' }}"
+                                 disabled>
+                          <label>Manager</label>
+                        </div>
+                      </div>
+
+                      <!-- Phone -->
+                      <div class="col-12 col-md-6">
+                        <div class="form-floating">
+                          <input class="form-control"
+                                 value="{{ current_user.phone
+                                          or current_user.phone_number
+                                          or current_user.mobile
+                                          or current_user.mobile_number
+                                          or '—' }}"
+                                 disabled>
+                          <label>Phone</label>
+                        </div>
+                      </div>
+
+                      <!-- Location -->
+                      <div class="col-12 col-md-6">
+                        <div class="form-floating">
+                          <input class="form-control"
+                                 value="{{ current_user.location
+                                          or current_user.office
+                                          or current_user.office_location
+                                          or current_user.city
+                                          or current_user.site
+                                          or '—' }}"
+                                 disabled>
+                          <label>Location</label>
+                        </div>
+                      </div>
+
+                    </div><!-- /row -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit -->
+          <div class="tab-pane fade" id="pf-edit" role="tabpanel" aria-labelledby="pf-edit-tab">
+            <form method="POST" action="{{ url_for('account.update_profile') }}" id="profileForm" class="needs-validation" novalidate>
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <div class="form-floating">
+                    <input type="text" class="form-control" name="name" value="{{ current_user.name or current_user.full_name or current_user.display_name or '' }}" required>
+                    <label>Full Name</label>
+                    <div class="invalid-feedback">Name is required.</div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="form-floating">
+                    <input type="email" class="form-control" name="email" value="{{ current_user.email or '' }}" {% if current_user.email %}readonly{% endif %}>
+                    <label>Email</label>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="form-floating">
+                    <input type="text" class="form-control" name="department" value="{{ current_user.department or current_user.department_name or '' }}">
+                    <label>Department</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="form-floating">
+                    <input type="text" class="form-control" name="title" value="{{ current_user.title or current_user.job_title or '' }}">
+                    <label>Job Title</label>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="form-floating">
+                    <input type="text" class="form-control" name="manager_name" value="{{ current_user.manager_name or current_user.supervisor_name or '' }}">
+                    <label>Manager</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="form-floating">
+                    <input type="text" class="form-control" name="phone" value="{{ current_user.phone or current_user.mobile or '' }}">
+                    <label>Phone</label>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="form-floating">
+                    <input type="text" class="form-control" name="location" value="{{ current_user.location or current_user.office or current_user.city or '' }}">
+                    <label>Location</label>
+                  </div>
+                </div>
+
+                <!-- Optional: password change -->
+                <div class="col-12">
+                  <div class="accordion" id="pwAccordion">
+                    <div class="accordion-item">
+                      <h2 class="accordion-header" id="pwHead">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pwCollapse">Change Password (optional)</button>
+                      </h2>
+                      <div id="pwCollapse" class="accordion-collapse collapse" data-bs-parent="#pwAccordion">
+                        <div class="accordion-body">
+                          <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                              <div class="form-floating">
+                                <input type="password" class="form-control" name="password">
+                                <label>New Password</label>
+                              </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                              <div class="form-floating">
+                                <input type="password" class="form-control" name="password_confirm">
+                                <label>Confirm Password</label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div> <!-- /tab-content -->
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+  <!-- Quick Prediction Modal -->
+  <div class="modal fade" id="quickPredictModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" method="GET" action="{{ url_for('predict') }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Quick Prediction</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="subtle mb-2">Open the form to score a single employee.</p>
+          <div class="mb-3">
+            <label class="form-label">Employee ID (optional)</label>
+            <input type="number" class="form-control" placeholder="e.g., 1023">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="{{ url_for('predict') }}" class="btn btn-primary">Open Prediction Form</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Batch Upload Offcanvas -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="csvCanvas" style="width:460px">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title"><i class="bi bi-file-earmark-spreadsheet"></i> Batch Prediction</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data" class="card pro p-3">
+        <div class="mb-3">
+          <label class="form-label">Upload CSV/Excel</label>
+          <input type="file" class="form-control" name="file" required>
+        </div>
+        <button class="btn btn-success w-100"><i class="bi bi-upload"></i> Predict from File</button>
+      </form>
+      <p class="subtle mt-3">Ensure your columns match the model fields.</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  // ===== Profile Modal: validation + AJAX update (same behavior as employee page) =====
+  (function () {
+    const form = document.getElementById('profileForm');
+    if (!form) return;
+
+    // Bootstrap validation
+    form.addEventListener('submit', function (e) {
+      if (!form.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
+      form.classList.add('was-validated');
+    }, false);
+
+    // AJAX submit
+    form.addEventListener('submit', async function (e) {
+      if (!form.checkValidity()) return;
+      e.preventDefault();
+
+      const fd = new FormData(form);
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          showToast(data.message || 'Update failed.', 'danger');
+          return;
+        }
+
+        const getVal = (v) => (v && String(v).trim()) ? v : '—';
+
+        // Update Overview fields in-place
+        const nameEl  = document.querySelector('#pf-overview .card .h5');
+        const roleTag = document.querySelector('#pf-overview .card .badge');
+        if (nameEl && data.user.name) nameEl.textContent = data.user.name;
+        if (roleTag && data.user.role) roleTag.textContent = String(data.user.role).toUpperCase();
+
+        const map = {
+                      'Employee ID': data.user.employee_id || data.user.emp_id || data.user.employeeId ||
+                                     data.user.employee_number || data.user.employeeNo || data.user.emp_no ||
+                                     data.user.user_id || data.user.userId || data.user.id,
+
+                      'Department':  data.user.department || data.user.dept || data.user.dept_name ||
+                                     data.user.department_name || data.user.departmentName || data.user.org_unit,
+
+                      'Job Title':   data.user.job_role || data.user.title || data.user.job_title ||
+                                     data.user.jobTitle || data.user.position || data.user.designation,
+
+                      'Manager':     data.user.manager_name || data.user.supervisor_name || data.user.manager ||
+                                     data.user.supervisor || data.user.manager_id || data.user.managerId ||
+                                     data.user.reports_to || data.user.reportsTo,
+
+                      'Phone':       data.user.phone || data.user.phone_number || data.user.mobile ||
+                                     data.user.mobile_number || data.user.contact_number,
+
+                      'Location':    data.user.location || data.user.office || data.user.office_location ||
+                                     data.user.city || data.user.site || data.user.region
+                    };
+
+        document.querySelectorAll('#pf-overview .form-floating').forEach(ff => {
+          const label = ff.querySelector('label')?.textContent?.trim();
+          const input = ff.querySelector('input.form-control');
+          if (label && input && (label in map)) input.value = getVal(map[label]);
+        });
+
+        // Update navbar display name if present
+        const navbarName = document.querySelector('.navbar .dropdown .dropdown-item-text .fw-semibold');
+        if (navbarName && data.user.name) navbarName.textContent = data.user.name;
+
+        showToast('Profile updated.', 'success');
+
+        // Switch back to Overview
+        const tabTrigger = document.querySelector('#pf-overview-tab');
+        if (tabTrigger) new bootstrap.Tab(tabTrigger).show();
+      } catch (err) {
+        showToast('Network error. Please try again.', 'danger');
+      }
+    });
+
+    function showToast(message, type) {
+      const container = document.querySelector('.toast-container') || (() => {
+        const c = document.createElement('div');
+        c.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(c);
+        return c;
+      })();
+
+      const t = document.createElement('div');
+      t.className = `toast align-items-center text-bg-${type} border-0`;
+      t.role = 'alert';
+      t.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>`;
+      container.appendChild(t);
+      new bootstrap.Toast(t, { delay: 3500 }).show();
+    }
+  })();
+
+  // ===== Charts =====
+  const likely   = Number({{ likely_leave or 0 }});
+  const notLikely= Number({{ not_likely or 0 }});
+  const labelsHist = {{ history_labels|default('[]')|safe }};
+  const dataHist   = {{ history_data|default('[]')|safe }};
+  const confHist   = {{ history_conf|default('[]')|safe }};
+  const otValues   = {{ overtime_counts|default('[0,0]')|safe }};
+
+  const bar = document.getElementById('barChart');
+  if (bar){
+    new Chart(bar,{
+      type:'bar',
+      data:{ labels:['Likely to Leave','Not Likely'],
+        datasets:[{ data:[likely,notLikely], borderRadius:10, maxBarThickness:56, label:'Team' }]
+      },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{mode:'index', intersect:false}},
+        scales:{ y:{ beginAtZero:true, ticks:{ precision:0 }}}
+      }
+    });
+  }
+
+  const line = document.getElementById('timelineChart');
+  if (line){
+    new Chart(line,{
+      type:'line',
+      data:{ labels: labelsHist,
+        datasets:[
+          { label:'Attrition Risk', data: dataHist, tension:.35 },
+          { label:'Confidence (%)', data: confHist, tension:.35 }
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom'}},
+        scales:{ y:{ beginAtZero:true } }
+      }
+    });
+  }
+
+  const od = document.getElementById('otChart');
+  if (od){
+    new Chart(od,{
+      type:'doughnut',
+      data:{ labels:['Overtime: Yes','Overtime: No'], datasets:[{ data: otValues, borderWidth:1 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom'} } }
+    });
+  }
+
+  // ===== Team table filters =====
+  const searchInput = document.getElementById('searchInput');
+  const roleSelect  = document.getElementById('roleSelect');
+  const teamRows    = Array.from(document.querySelectorAll('#teamTable tbody tr'));
+  function applyRowFilters(){
+    const q=(searchInput?.value||'').toLowerCase(), r=(roleSelect?.value||'').toLowerCase();
+    teamRows.forEach(tr=>{
+      const name=(tr.getAttribute('data-name')||'').toLowerCase();
+      const role=(tr.getAttribute('data-role')||'').toLowerCase();
+      tr.style.display = (!q || name.includes(q)) && (!r || r===role) ? '' : 'none';
+    });
+  }
+  searchInput?.addEventListener('input', applyRowFilters);
+  roleSelect?.addEventListener('change', applyRowFilters);
+</script>
+{% endblock %}

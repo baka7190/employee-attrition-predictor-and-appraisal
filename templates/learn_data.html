@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learning Resources</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+  <h2 class="mb-4 text-center fw-bold">Learning Resources</h2>
+
+  <!-- DATASET INFO -->
+  <div class="card shadow-sm border-0 rounded-4 mb-5">
+    <div class="card-body p-4">
+      <h4 class="fw-bold mb-3">Dataset Columns</h4>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead class="table-light">
+            <tr>
+              <th>Column</th>
+              <th>Description</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for col in data_dict %}
+            <tr>
+              <td><strong>{{ col.column }}</strong></td>
+              <td>{{ col.description }}</td>
+              <td><code>{{ col.example }}</code></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRICS INFO -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <h4 class="fw-bold mb-3">Evaluation Metrics</h4>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead class="table-light">
+            <tr>
+              <th>Metric</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in metrics_explained %}
+            <tr>
+              <td><strong>{{ m.metric }}</strong></td>
+              <td>{{ m.meaning }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUTTON -->
+  <div class="text-center mt-5">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary px-4">Back to Dashboard</a>
+  </div>
+</div>
+
+</body>
+</html>

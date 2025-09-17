@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Predict Employee Attrition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f4f6f9;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .container-card {
+      max-width: 1000px;
+      margin: 60px auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 25px;
+      color: #343a40;
+    }
+
+    label {
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .btn-predict {
+      display: block;
+      width: 100%;
+      background-color: #28a745;
+      color: #fff;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 25px;
+    }
+
+    .btn-predict:hover {
+      background-color: #218838;
+    }
+
+    @media (max-width: 768px) {
+      .container-card {
+        margin: 20px;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container-card">
+    <h2>Predict Employee Attrition</h2>
+    <form method="POST" action="/predict">
+      <div class="row g-3">
+        <!-- COLUMN 1 -->
+        <div class="col-md-6">
+          <label for="JobLevel">Job Level (1–5)</label>
+          <input type="number" class="form-control" name="JobLevel" required>
+
+                    <!-- Gender -->
+            <label for="Gender">Gender</label>
+            <select class="form-control" name="Gender" required>
+            <option value="0">Female</option>
+            <option value="1">Male</option>
+            </select>
+
+            <!-- OverTime -->
+            <label for="OverTime">Overtime</label>
+            <select class="form-control" name="OverTime" required>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+            </select>
+
+
+          <label for="Total_Satisfaction_bool">Satisfaction Score</label>
+          <input type="number" class="form-control" name="Total_Satisfaction_bool" required>
+
+          <label for="DailyRate_bool">Daily Rate</label>
+          <input type="number" class="form-control" name="DailyRate_bool" required>
+
+          <label for="DistanceFromHome_bool">Distance from Home (in km)</label>
+          <input type="number" class="form-control" name="DistanceFromHome_bool" required>
+
+          <label for="HourlyRate_bool">Hourly Rate</label>
+          <input type="number" class="form-control" name="HourlyRate_bool" required>
+
+          <label for="NumCompaniesWorked_bool">Number of Previous Employers</label>
+          <input type="number" class="form-control" name="NumCompaniesWorked_bool" required>
+
+          <label for="YearsAtCompany_bool">Years at Current Company</label>
+          <input type="number" class="form-control" name="YearsAtCompany_bool" required>
+
+          <label for="YearsSinceLastPromotion_bool">Years Since Last Promotion</label>
+          <input type="number" class="form-control" name="YearsSinceLastPromotion_bool" required>
+
+          <label for="BusinessTravel">Business Travel Frequency</label>
+          <select class="form-control" name="BusinessTravel" required>
+            <option value="Travel_Rarely">Rarely</option>
+            <option value="Travel_Frequently">Frequently</option>
+            <option value="Non-Travel">No Travel</option>
+          </select>
+
+          <label for="Education">Education Level (1–5)</label>
+          <input type="number" class="form-control" name="Education" required>
+
+          <label for="MaritalStatus">Marital Status</label>
+          <select class="form-control" name="MaritalStatus" required>
+            <option value="Single">Single</option>
+            <option value="Married">Married</option>
+            <option value="Divorced">Divorced</option>
+          </select>
+        </div>
+
+        <!-- COLUMN 2 -->
+        <div class="col-md-6">
+          <label for="PerformanceRating">Performance Rating (1–4)</label>
+          <input type="number" class="form-control" name="PerformanceRating" required>
+
+          <label for="Gender">Gender (1 for Male, 0 for Female)</label>
+          <input type="number" class="form-control" name="Gender" required>
+
+          <label for="Age_bool">Age</label>
+          <input type="number" class="form-control" name="Age_bool" required>
+
+          <label for="Department_bool">Department Risk Score</label>
+          <input type="number" class="form-control" name="Department_bool" required>
+
+          <label for="JobRole_bool">Job Role Risk Score</label>
+          <input type="number" class="form-control" name="JobRole_bool" required>
+
+          <label for="MonthlyIncome_bool">Monthly Income</label>
+          <input type="number" class="form-control" name="MonthlyIncome_bool" required>
+
+          <label for="TotalWorkingYears_bool">Total Working Years</label>
+          <input type="number" class="form-control" name="TotalWorkingYears_bool" required>
+
+          <label for="YearsInCurrentRole_bool">Years in Current Role</label>
+          <input type="number" class="form-control" name="YearsInCurrentRole_bool" required>
+
+          <label for="YearsWithCurrManager_bool">Years with Current Manager</label>
+          <input type="number" class="form-control" name="YearsWithCurrManager_bool" required>
+
+          <label for="Department">Department Name</label>
+          <input type="text" class="form-control" name="Department" required>
+
+          <label for="EducationField">Education Field</label>
+          <input type="text" class="form-control" name="EducationField" required>
+
+          <label for="StockOptionLevel">Stock Option Level (0–3)</label>
+          <input type="number" class="form-control" name="StockOptionLevel" required>
+
+          <label for="TrainingTimesLastYear">Training Times (Past Year)</label>
+          <input type="number" class="form-control" name="TrainingTimesLastYear" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-predict mt-4">Predict</button>
+    </form>
+  </div>
+
+</body>
+</html>

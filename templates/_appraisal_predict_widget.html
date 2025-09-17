@@ -1,0 +1,105 @@
+{# ---- _appraisal_predict_widget.html ---- #}
+<style>
+  .apw-soft{border:0;border-radius:16px;box-shadow:0 10px 30px rgba(13,110,253,.07)}
+  .apw-badge{border-radius:999px}
+  .apw-kv{display:flex;justify-content:space-between;font-size:.95rem}
+  .apw-kv .k{color:#6c757d}
+  .apw-mini td{padding:.4rem .6rem}
+  .apw-pill{font-weight:700}
+</style>
+
+{# helpers #}
+{% set la = latest_appraisal if latest_appraisal is defined else None %}
+{% set hist = appr_history if appr_history is defined else [] %}
+{% set employee_name = (la.employee_name if la and la.employee_name is defined else (selected_user.username if selected_user is defined else '—')) %}
+
+<div class="card apw-soft mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="fw-semibold">Employee Context</div>
+      <span class="badge apw-badge text-bg-light">{{ employee_name }}</span>
+    </div>
+    <hr class="my-2">
+    <div class="row g-2">
+      <div class="col-6">
+        <div class="small text-muted">Latest appraisal score</div>
+        <div class="fs-4 apw-pill">
+          {{ la.score if la and la.score is defined else '—' }}
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="small text-muted">Status</div>
+        {% set st = la.status if la and la.status is defined else '—' %}
+        {% set badge = 'secondary' %}
+        {% if st in ['APPROVED','Approved'] %}{% set badge='success' %}{% endif %}
+        {% if st in ['MANAGER_SUBMITTED','Awaiting HR'] %}{% set badge='warning' %}{% endif %}
+        {% if st in ['HR_REVIEWED'] %}{% set badge='primary' %}{% endif %}
+        {% if st in ['REJECTED','Returned'] %}{% set badge='danger' %}{% endif %}
+        <span class="badge apw-badge text-bg-{{ badge }}">{{ st|replace('_',' ') }}</span>
+      </div>
+      <div class="col-12">
+        <div class="apw-kv"><span class="k">Period</span>
+          <span>{{ la.period_start if la and la.period_start is defined else '—' }} → {{ la.period_end if la and la.period_end is defined else '—' }}</span>
+        </div>
+        <div class="apw-kv"><span class="k">Manager</span>
+          <span>{{ la.manager_name if la and la.manager_name is defined else '—' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card apw-soft mb-3">
+  <div class="card-body">
+    <div class="fw-semibold mb-2">Use appraisal in prediction</div>
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" name="use_appraisal" id="useApprSwitch">
+      <label class="form-check-label" for="useApprSwitch">Include latest score as a feature (β)</label>
+    </div>
+    <div class="mt-2">
+      <label class="form-label small mb-1">Weight β (0–1)</label>
+      <input type="range" class="form-range" min="0" max="1" step="0.05" value="0.25" name="appr_weight" id="apprWeight">
+      <div class="small text-muted">β = <span id="apwVal">0.25</span></div>
+    </div>
+    <div class="small text-muted mt-2">Safe UI-only: if backend ignores these fields, nothing breaks.</div>
+  </div>
+</div>
+
+<div class="card apw-soft">
+  <div class="card-body">
+    <div class="fw-semibold mb-2">Recent Appraisals</div>
+    {% if hist and hist|length>0 %}
+      <div class="table-responsive">
+        <table class="table table-sm apw-mini align-middle mb-0">
+          <thead class="table-light"><tr><th>Period</th><th style="width:90px">Score</th><th style="width:130px">Status</th></tr></thead>
+          <tbody>
+            {% for r in hist[:5] %}
+              {% set s = r.status or '—' %}
+              {% set b = 'secondary' %}
+              {% if s in ['APPROVED','Approved'] %}{% set b='success' %}{% endif %}
+              {% if s in ['MANAGER_SUBMITTED','Awaiting HR'] %}{% set b='warning' %}{% endif %}
+              {% if s in ['HR_REVIEWED'] %}{% set b='primary' %}{% endif %}
+              {% if s in ['REJECTED','Returned'] %}{% set b='danger' %}{% endif %}
+              <tr>
+                <td class="text-nowrap">{{ r.period_start or '—' }} → {{ r.period_end or '—' }}</td>
+                <td class="fw-semibold">{{ r.score or '—' }}</td>
+                <td><span class="badge apw-badge text-bg-{{ b }}">{{ s|replace('_',' ') }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-muted">No appraisal history for this employee.</div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // slider readout
+  (function(){
+    const s = document.getElementById('apprWeight');
+    const o = document.getElementById('apwVal');
+    if(s && o){ s.addEventListener('input', ()=> o.textContent = s.value); o.textContent = s.value; }
+  })();
+</script>

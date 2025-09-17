@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}HR Review — Appraisal #{{ a.id }}{% endblock %}
+
+{% block head %}
+<style>
+  .wrap{max-width:1100px;margin:auto}
+  .soft{border:1px solid #e9ecef;border-radius:16px;box-shadow:0 10px 30px rgba(13,110,253,.06)}
+  .table thead th{color:#6c757d;font-weight:700;border-bottom:1px solid #e9ecef}
+  .badge-pill{border-radius:999px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="wrap">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h4 class="mb-0">HR Review — Appraisal #{{ a.id }}</h4>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('appraisal.hr_review_queue_ui') }}">Back to Queue</a>
+    </div>
+
+    <div class="card soft mb-3">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6"><strong>Employee:</strong> {{ employee.username if employee else a.employee_id }}</div>
+          <div class="col-md-6"><strong>Supervisor:</strong> {{ supervisor.username if supervisor else a.supervisor_id }}</div>
+        </div>
+        <div class="row mt-1">
+          <div class="col-md-6"><strong>Period:</strong> {{ a.period_start }} → {{ a.period_end }}</div>
+          <div class="col-md-6"><strong>Status:</strong>
+            <span class="badge badge-pill text-bg-{{ 'warning' if a.status.name=='MANAGER_SUBMITTED' else ('success' if a.status.name=='APPROVED' else ('danger' if a.status.name=='REJECTED' else 'secondary')) }}">
+              {{ a.status.name.replace('_',' ') }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if wl %}
+    <div class="card soft mb-3">
+      <div class="card-body">
+        <h6 class="mb-2">Time Allocation</h6>
+        <div>Teaching: <strong>{{ wl.teaching_percent }}%</strong> · Research: <strong>{{ wl.research_percent }}%</strong> · Other: <strong>{{ wl.other_percent }}%</strong></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card soft mb-3">
+      <div class="card-body">
+        <h6 class="mb-2">Ratings & Examples</h6>
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead><tr><th>Criterion</th><th style="width:120px">Rating</th><th>Example / Evidence</th></tr></thead>
+            <tbody>
+              {% for r in rows %}
+              <tr>
+                <td>{{ r.label }}</td>
+                <td class="fw-semibold">{{ r.rating or '—' }}</td>
+                <td>{{ r.example or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-2">
+          <strong>Total / Avg:</strong> {{ a.total_score or 0 }}{% if avg %}  (avg {{ avg }}){% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card soft mb-3">
+      <div class="card-body">
+        <h6 class="mb-2">Comments</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="text-muted small">Employee</div>
+            <div>{{ a.employee_comment or '—' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Supervisor</div>
+            <div>{{ a.supervisor_comment or '—' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="POST" class="d-flex gap-2">
+      <button name="action" value="approve" class="btn btn-success"><i class="bi bi-check2-circle"></i> Approve</button>
+      <button name="action" value="reject"  class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> Reject</button>
+      <a href="{{ url_for('appraisal.hr_review_queue_ui') }}" class="btn btn-outline-secondary">Close</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

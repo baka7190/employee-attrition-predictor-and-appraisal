@@ -1,0 +1,13 @@
+<h2>HR Review: {{ r.employee.username }}</h2>
+<p><strong>Self Rating:</strong> {{ r.self_rating }} | <strong>Manager Rating:</strong> {{ r.manager_rating }}</p>
+<p><strong>Manager Comments:</strong> {{ r.manager_comments }}</p>
+<form method="post">
+  <label>HR Comments</label><textarea name="hr_comments">{{ r.hr_comments or "" }}</textarea>
+  <label><input type="checkbox" name="promotion_recommended" {% if r.promotion_recommended %}checked{% endif %}> Recommend Promotion</label>
+  <div>
+    <label>New Title</label><input name="new_title" value="{{ r.new_title or '' }}">
+    <label>New Salary</label><input name="new_salary" type="number" step="0.01" value="{{ r.new_salary or '' }}">
+    <label>Effective Date</label><input name="effective_date" type="date" value="{{ r.effective_date or '' }}">
+  </div>
+  <button type="submit">Record Decision</button>
+</form>

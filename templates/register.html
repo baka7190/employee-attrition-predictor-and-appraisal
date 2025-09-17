@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center vh-100"
+     style="background: linear-gradient(-45deg, #0a2342, #193c70, #0a2342, #193c70); background-size: 400% 400%; animation: gradientMove 10s ease infinite;">
+
+  <div class="card shadow-lg p-4"
+       style="max-width: 400px; width: 100%; background-color: rgba(255,255,255,0.95); border-radius: 10px;">
+    <h3 class="text-center mb-4 text-dark">Create Account</h3>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} text-center">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="mb-3">
+        <label class="form-label fw-bold">Username</label>
+        <input type="text" name="username" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+
+      <button type="submit" class="btn w-100 text-white" style="background-color: #f9a825;">
+        Sign Up
+      </button>
+
+      <div class="text-center mt-3">
+        Already have an account?
+        <a href="{{ url_for('login') }}" class="fw-bold text-decoration-none" style="color:#0a2342;">Login</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+</style>
+{% endblock %}

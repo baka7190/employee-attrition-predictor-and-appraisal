@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Manager Review{% endblock %}
+
+{% block content %}
+    <h1>Review Details</h1>
+
+    <p><strong>ID:</strong> {{ review.id }}</p>
+    <p><strong>Employee:</strong> {{ review.employee.username }}</p>
+    <p><strong>Content:</strong> {{ review.content }}</p>
+    <p><strong>Status:</strong> {{ review.status.name }}</p>
+
+    <a href="{{ url_for('reviews.manager_inbox') }}">Back to Inbox</a>
+{% endblock %}
