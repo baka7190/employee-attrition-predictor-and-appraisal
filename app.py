@@ -8,6 +8,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.routing import BuildError
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.linear_model import LogisticRegression
 
 import os, glob, shutil, json
 import numpy as np
@@ -85,7 +88,7 @@ app.jinja_env.globals['role_str'] = _role_to_string
 @app.route("/hr/export/csv")
 @login_required
 def hr_export_csv():
-    if get_role(current_user) != "HR":
+    if get_role(current_user) != "hr":
         flash("Access denied.", "danger")
         return redirect(url_for("dashboard_hr"))
 
@@ -111,7 +114,7 @@ def hr_export_csv():
 @app.route("/hr/export/excel")
 @login_required
 def hr_export_excel():
-    if get_role(current_user) != "HR":
+    if get_role(current_user) != "hr":
         flash("Access denied.", "danger")
         return redirect(url_for("dashboard_hr"))
 
@@ -179,7 +182,7 @@ def hr_ui_communicate():
 @app.route("/hr/export/pdf")
 @login_required
 def hr_export_pdf():
-    if get_role(current_user) != "HR":
+    if get_role(current_user) != "hr":
         flash("Access denied.", "danger")
         return redirect(url_for("dashboard_hr"))
 
@@ -212,16 +215,28 @@ def inject_csrf_token():
     return dict(csrf_token=generate_csrf)
 
 # === Database Config ===
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://attrition_user:12345@localhost:5432/attrition_db'
+db_url = os.getenv("DATABASE_URL", "postgresql://attrition_user:12345@localhost:5432/attrition_db")
+# Railway sometimes sets postgres:// — SQLAlchemy expects postgresql://
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# === Database Config (env-first) ===
+db_url = os.getenv("DATABASE_URL", "sqlite:///app.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+
 # === Mail Config ===
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your_email@gmail.com'
-app.config['MAIL_PASSWORD'] = 'your_app_password'
-app.config['MAIL_DEFAULT_SENDER'] = 'your_email@gmail.com'
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', '1') == '1'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
 
 mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
@@ -231,6 +246,15 @@ db.init_app(app)
 migrate.init_app(app, db)
 app.register_blueprint(reviews_bp)
 app.register_blueprint(appraisal_bp)
+
+# Create tables automatically on boot unless disabled
+if os.getenv("AUTO_CREATE_DB", "1") == "1":
+    with app.app_context():
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.warning("create_all failed: %s", e)
+
 # account_bp is registered after it’s declared below
 
 
@@ -796,7 +820,7 @@ def prediction_history():
 @app.route('/dashboard/manager')
 @login_required
 def dashboard_manager():
-    if get_role(current_user) != "MANAGER":
+    if get_role(current_user) != "manager":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_manager"))
 
@@ -873,7 +897,7 @@ def dashboard_hr():
                provide hr_awaiting_count, hr_returned_count, hr_finalized_count,
                hr_overdue_count, hr_queue, recent_appraisals.
     """
-    if get_role(current_user) != "HR":
+    if get_role(current_user) != "hr":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_hr"))
 
@@ -1097,7 +1121,7 @@ def inject_now():
 @app.route('/admin/train_model', methods=['POST'])
 @login_required
 def train_model():
-    if get_role(current_user) != "ADMIN":
+    if get_role(current_user) != "admin":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1163,7 +1187,7 @@ def train_model():
 @app.route('/dashboard/admin')
 @login_required
 def dashboard_admin():
-    if get_role(current_user) != "ADMIN":
+    if get_role(current_user) != "admin":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1228,7 +1252,7 @@ def inject_notifications():
     if current_user.is_authenticated:
         # Example: notifications from predictions or appraisals
         try:
-            if get_role(current_user) in ["MANAGER", "HR"]:
+            if get_role(current_user) in ["manager", "hr"]:
                 # Unseen predictions
                 count = Prediction.query.filter_by(user_id=current_user.id).count()
                 items = Prediction.query.order_by(Prediction.timestamp.desc()).limit(5).all()
@@ -1359,7 +1383,7 @@ def delete_prediction(prediction_id):
         pred = Prediction.query.get_or_404(prediction_id)
 
         # Allow only the owner (or admin/HR) to delete
-        if pred.user_id != current_user.id and get_role(current_user) not in ["ADMIN", "HR"]:
+        if pred.user_id != current_user.id and get_role(current_user) not in ["admin", "hr"]:
             flash("You don’t have permission to delete this prediction.", "danger")
             return redirect(url_for('prediction_history'))
 
@@ -1377,7 +1401,7 @@ def delete_prediction(prediction_id):
 @app.route('/admin/create_user', methods=['POST'])
 @login_required
 def create_user():
-    if get_role(current_user) != "ADMIN":
+    if get_role(current_user) != "admin":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1414,7 +1438,7 @@ def create_user():
 @app.route('/admin/approve/<int:user_id>', methods=['POST'])
 @login_required
 def approve_user(user_id):
-    if get_role(current_user) != "ADMIN":
+    if get_role(current_user) != "admin":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1427,7 +1451,7 @@ def approve_user(user_id):
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
 @login_required
 def reject_user(user_id):
-    if get_role(current_user) != "ADMIN":
+    if get_role(current_user) != "admin":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1440,7 +1464,7 @@ def reject_user(user_id):
 @app.route('/admin/reset_password/<int:user_id>', methods=['POST'])
 @login_required
 def reset_user_password(user_id):
-    if get_role(current_user) != "ADMIN":
+    if get_role(current_user) != "admin":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
@@ -1504,7 +1528,7 @@ def delete_user(user_id):
 @app.route('/admin/delete_old_models', methods=['POST'])
 @login_required
 def delete_old_models():
-    if get_role(current_user) != "ADMIN":
+    if get_role(current_user) != "admin":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
 
