@@ -6,8 +6,6 @@ from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.routing import BuildError
-from flask_mail import Mail, Message
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import LogisticRegression
@@ -65,6 +63,57 @@ account_bp = Blueprint('account', __name__, url_prefix='/account')
 csrf = CSRFProtect(app)
 app.config["WTF_CSRF_ENABLED"] = False
 
+# --- Admin bootstrap: create/promote one admin if none exists ---
+def bootstrap_admin():
+    """
+    If the database has no Admin user, create (or promote) one using env vars:
+      BOOTSTRAP_ADMIN_EMAIL (required)
+      BOOTSTRAP_ADMIN_USERNAME (default: 'admin')
+      BOOTSTRAP_ADMIN_PASSWORD (default: 'ChangeMe123!')
+    """
+    try:
+        # already have an admin? do nothing
+        has_admin = db.session.query(User.id).filter_by(role=Role.ADMIN).first()
+        if has_admin:
+            return
+
+        email = os.getenv("BOOTSTRAP_ADMIN_EMAIL")
+        if not email:
+            app.logger.warning(
+                "No BOOTSTRAP_ADMIN_EMAIL set; cannot auto-create admin."
+            )
+            return
+
+        username = os.getenv("BOOTSTRAP_ADMIN_USERNAME", "admin")
+        password = os.getenv("BOOTSTRAP_ADMIN_PASSWORD", "ChangeMe123!")
+
+        # promote existing user with that email, or create new Admin
+        u = User.query.filter_by(email=email).first()
+        if u:
+            u.role = Role.ADMIN
+            u.is_active = True
+            if password:
+                u.password = generate_password_hash(password)
+        else:
+            u = User(
+                username=username,
+                email=email,
+                password=generate_password_hash(password),
+                role=Role.ADMIN,
+                is_active=True,
+            )
+            db.session.add(u)
+
+        db.session.commit()
+        app.logger.warning(
+            "✅ Bootstrapped Admin: %s <%s>. Please change the password.",
+            username, email
+        )
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error("bootstrap_admin failed: %s", e)
+
+
 # ---- SAFE URL helper to prevent BuildError in templates (added) ----
 def safe_url_for(endpoint, **values):
     """Return a URL if endpoint exists; otherwise None. Use in templates to avoid 500s."""
@@ -84,6 +133,40 @@ def role_str(value):
 app.jinja_env.globals['role_str'] = role_str
 app.jinja_env.filters['role_str'] = role_str
 app.jinja_env.globals['role_str'] = _role_to_string
+
+# --- TEMP: one-time admin seeder route (remove after use) ---
+@app.get("/_seed_admin")
+def _seed_admin():
+    token = request.args.get("token", "")
+    if token != os.environ.get("SEED_ADMIN_TOKEN", ""):
+        abort(403)
+
+    email = os.getenv("BOOTSTRAP_ADMIN_EMAIL")
+    username = os.getenv("BOOTSTRAP_ADMIN_USERNAME", "admin")
+    password = os.getenv("BOOTSTRAP_ADMIN_PASSWORD", "ChangeMe123!")
+
+    if not email:
+        return "BOOTSTRAP_ADMIN_EMAIL not set", 400
+
+    u = User.query.filter_by(email=email).first()
+    if u:
+        u.role = Role.ADMIN
+        u.is_active = True
+        if password:
+            u.password = generate_password_hash(password)
+    else:
+        u = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(password),
+            role=Role.ADMIN,
+            is_active=True,
+        )
+        db.session.add(u)
+
+    db.session.commit()
+    return f"Admin ready for {email}"
+
 
 @app.route("/hr/export/csv")
 @login_required
@@ -229,18 +312,6 @@ if db_url.startswith("postgres://"):
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-
-# === Mail Config ===
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', '1') == '1'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
-
-mail = Mail(app)
-serializer = URLSafeTimedSerializer(app.secret_key)
-
 # === Init Extensions & Blueprints ===
 db.init_app(app)
 migrate.init_app(app, db)
@@ -254,6 +325,8 @@ if os.getenv("AUTO_CREATE_DB", "1") == "1":
             db.create_all()
         except Exception as e:
             app.logger.warning("create_all failed: %s", e)
+
+        bootstrap_admin()
 
 # account_bp is registered after it’s declared below
 
