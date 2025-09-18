@@ -9,109 +9,173 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-  <!-- Google Font for Welcome Message -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Fonts: Poppins (title), Pacifico fallback for cursive -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Pacifico&display=swap" rel="stylesheet">
 
   <style>
     :root{
       --brand-primary:#0d6efd;
-      --brand-secondary:#6f42c1;
-      --text-dark:#1f2330;
-      --text-muted:#6c757d;
-      --surface:#ffffff;
-      --bg:#f4f6f9;
-      --hero-bg:#0f172a;
+      --hero-bg:#165f73;       /* teal/blue hero */
+      --panel-border:#0e1720;
+      --note-bg:#eef2f7;
+    }
+
+    /* Billion Dreams font */
+    @font-face{
+      font-family:"Billion Dreams";
+      src:url("{{ url_for('static', filename='fonts/BillionDreams.ttf') }}") format("truetype");
+      font-weight:400;
+      font-style:normal;
+      font-display:swap;
     }
 
     body{
-      background: var(--bg);
-      font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      color: var(--text-dark);
+      background:#ffffff;
+      color:#111;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     }
 
-    /* Navbar */
+    /* top bar */
     .navbar{
-      background: #fff;
-      box-shadow: 0 2px 16px rgba(0,0,0,.04);
-    }
-    .nav-actions { display:flex; gap:12px; align-items:center; }
-    @media (max-width:768px){
-      .nav-actions { flex-direction:column; width:100%; padding-top:10px; }
-      .nav-actions a, .nav-actions button { width:100%; text-align:center; }
+      background:#fff;
+      border:1px solid #dfe3ea;
+      border-radius:6px;
+      margin:16px 16px 0;
+      padding:6px 10px;
     }
 
-    /* Hero */
-    .hero-wrap{
-      position: relative;
-      border-bottom: 1px solid rgba(0,0,0,.06);
-      min-height: 320px;
-      background: var(--hero-bg);
-    }
-    .hero-content{ position: relative; padding: 84px 0 56px; text-align: center; }
-    .hero-content h1{
-      font-family: "Poppins", sans-serif;
-      font-weight: 700;
-      font-size: 2rem;
-      line-height: 1.3;
+    /* HERO (taller, teal-blue, thin border) */
+    .hero{
+      background:var(--hero-bg);
       color:#fff;
-      margin-bottom:.5rem;
-      text-shadow: 0 10px 30px rgba(0,0,0,.65), 0 3px 10px rgba(0,0,0,.55);
+      border:1px solid #0b1325;
+      border-radius:6px;
+      margin:10px 16px 16px;
+      padding:72px 10px 64px;  /* extended height */
+      min-height:380px;
+      text-align:center;
     }
-    .brand-gradient{
-      background: linear-gradient(90deg, var(--brand-primary), var(--brand-secondary));
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      -webkit-text-stroke: .35px rgba(255,255,255,.35);
-      text-shadow: 0 0 18px rgba(99,102,241,.45), 0 2px 22px rgba(13,110,253,.35);
+    .hero .kicker{
+      font-family:"Billion Dreams","Pacifico",cursive;
+      font-size:clamp(20px, 2.6vw, 28px);
+      line-height:1.15;
+      margin-bottom:16px;
     }
-    .hero-subtitle{ color: rgba(255,255,255,.92); max-width: 720px; margin: 0 auto; }
+    .hero .title{
+      font-family:"Poppins",sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.02em;
+      font-weight:700;
+      font-size:clamp(22px,4.2vw,42px);
+      margin:0 8px 18px;
+    }
+    .hero .tag{
+      font-family:"Pristina","Billion Dreams","Pacifico",cursive;
+      font-size:clamp(16px, 2.2vw, 22px);
+      line-height:1.2;
+    }
 
-    /* Portal cards */
+    /* two white panels row (compact height) */
+    .panels-wrap{ margin:0 16px 8px; }
+
+    .panel-white{
+      background:#fff;
+      border:2px solid var(--panel-border);
+      border-radius:4px;
+      min-height:160px;
+      padding:12px 16px 14px;
+    }
+
+    /* === Two-panels row: perfect edge alignment via CSS Grid === */
+    .panels-wrap .two-panels{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:1.5rem;     /* center gap only */
+      margin:0;       /* no outer margins – aligns with the hero edges */
+    }
+    /* Stack on smaller screens */
+    @media (max-width: 992px){
+      .panels-wrap .two-panels{ grid-template-columns:1fr; }
+    }
+    /* Equal height panels */
+    .panels-wrap .two-panels > .panel-cell{ display:flex; }
+    .panels-wrap .two-panels > .panel-cell .panel-white{
+      display:flex;
+      flex-direction:column;
+      height:100%;
+    }
+
+    .panel-heading{
+      font-family:"Poppins",sans-serif;
+      text-transform:uppercase;
+      font-weight:700;
+      font-size:clamp(14px,2vw,18px);
+      text-align:center;
+      margin-bottom:8px;
+    }
+    .panel-white p{ color:#344054; margin-bottom:.6rem; }
+    .panel-white ul{ margin:.25rem 0 .5rem 1.25rem; }
+    .panel-white li{ color:#344054; }
+
+    /* instruction block + portals container */
+    .instructions-block{
+      margin:14px 16px 0;
+      background:var(--note-bg);
+      border:1px solid #cfd6df;
+      border-radius:6px;
+      padding:10px 12px 0;
+    }
+    .instructions-block .leadline{ font-weight:600; }
+    .instructions-block ol{
+      margin:6px 0 10px 20px;
+      color:#334155;
+      font-size:14px;
+    }
     .portal-grid{
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 18px;
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:14px;
+      padding:12px 6px 16px;
     }
-    @media (max-width: 992px){ .portal-grid{ grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 576px){ .portal-grid{ grid-template-columns: 1fr; } }
+    @media (max-width: 992px){ .portal-grid{ grid-template-columns:repeat(2,1fr);} }
+    @media (max-width: 576px){ .portal-grid{ grid-template-columns:1fr;} }
+
     .portal-card{
-      background: var(--surface);
-      border: 1px solid rgba(0,0,0,.06);
-      border-radius: 16px;
-      padding: 22px;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(21,27,38,.04);
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    }
-    .portal-card:hover{
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(21,27,38,.08);
-      border-color: rgba(13,110,253,.25);
+      background:#fff;
+      border:1px solid #e6e9ee;
+      border-radius:12px;
+      padding:18px;
+      text-align:center;
+      box-shadow:0 2px 6px rgba(0,0,0,.04);
     }
     .portal-icon{
-      display:flex; justify-content:center; align-items:center;
-      margin:0 auto 14px; font-size:2rem; height:60px; width:60px; border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      width:64px;height:64px;border-radius:50%;margin:0 auto 10px;
+      font-size:28px;
     }
-    .portal-card h5{ margin: 8px 0 6px; }
-    .portal-card p{ margin: 0 0 16px; color: var(--text-muted); }
+    .portal-card p{ color:#6b7280; font-size:14px; }
 
-    /* Footer */
-    footer{ color: var(--text-muted); padding: 28px 0 36px; }
-    .flash-wrap{ margin-top: 16px; }
+    footer{
+      border-top:1px solid #e7eaf0;
+      margin:10px 16px;
+      padding:8px 0 16px;
+      color:#6b7280;
+      text-align:center;
+    }
   </style>
 </head>
 <body>
 
   <!-- Topbar -->
-  <nav class="navbar navbar-expand-lg">
-    <div class="container">
-      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+  <nav class="navbar">
+    <div class="container-fluid p-0">
+      <div class="d-flex align-items-center gap-2">
         <i class="bi bi-graph-up"></i>
-        <span class="fw-semibold">Employee Attrition Prediction</span>
-      </a>
-      <div class="ms-auto nav-actions">
-        <a href="{{ url_for('recover') }}" class="link-secondary text-decoration-none">Forgot Password</a>
-        <!-- Open the REGISTER MODAL directly -->
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#signupModal">
+        <strong>Employee Attrition Prediction</strong>
+      </div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <a href="{{ url_for('recover') }}" class="small link-secondary text-decoration-none">Forgot Password</a>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#signupModal">
           <i class="bi bi-person-plus"></i> Create Account
         </button>
       </div>
@@ -121,7 +185,7 @@
   <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="container flash-wrap">
+      <div class="container mt-2">
         {% for category, message in messages %}
           <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
             {{ message }}
@@ -132,50 +196,80 @@
     {% endif %}
   {% endwith %}
 
-  <!-- Hero -->
-  <section class="hero-wrap">
-    <div class="container hero-content">
-      <h1 class="display-5 fw-bold mb-2">
-        Welcome to <span class="brand-gradient">Employee Attrition Predictor</span>
-      </h1>
-      <p class="hero-subtitle mb-4">
-        Choose your portal to sign in. Role-based access ensures employees, managers, HR, and admins each see the tools designed for them.
-      </p>
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">Welcome To</div>
+    <h1 class="title">Employee Attrition Predictor &amp; Appraisal System</h1>
+    <div class="tag">Role-based HR platform that blends performance management with machine-learning attrition insights</div>
+  </header>
+
+  <!-- Two Panels (CSS Grid, flush with hero edges) -->
+  <section class="panels-wrap">
+    <div class="two-panels">
+      <div class="panel-cell">
+        <div class="panel-white">
+          <div class="panel-heading">What this system is</div>
+          <p>
+            A role-aware application for Employees, Managers, HR, and Admins. It predicts attrition risk,
+            streamlines appraisal workflows, and surfaces HR analytics so you can act early and fairly.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel-cell">
+        <div class="panel-white">
+          <div class="panel-heading">What it can do</div>
+          <ul class="mb-0">
+            <li>Predict attrition risk with confidence &amp; top drivers; show tailored recommendations.</li>
+            <li>Run performance cycles with submissions, reviews, returns, and approvals.</li>
+            <li>Role-specific dashboards, HR trend analytics (department, tenure, overtime).</li>
+            <li>Manage users/roles/passwords; export datasets to CSV/Excel.</li>
+            <li>Train or replace ML models in-app; encoder/columns kept in sync.</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Portals -->
-  <main class="container my-4">
+  <!-- Instructions + Portals -->
+  <section class="instructions-block">
+    <div class="small leadline"><i class="bi bi-hand-index-thumb me-1"></i>Choose your portal, then sign in:</div>
+    <ol>
+      <li>Click the card that matches your role (Employee, Manager, HR, or Admin).</li>
+      <li>In the modal, enter <em>Username or Email</em> and <em>Password</em>. The system verifies the role automatically.</li>
+      <li>New here? Select <strong>Create Account</strong>. Forgot? Use <strong>Forgot Password</strong>.</li>
+    </ol>
+
     <div class="portal-grid">
       <div class="portal-card">
         <div class="portal-icon bg-primary-subtle text-primary"><i class="bi bi-person-badge"></i></div>
-        <h5>Employee Portal</h5>
+        <h6>Employee Portal</h6>
         <p>Access your dashboard, view appraisal history, and submit self-assessments.</p>
         <button class="btn btn-primary w-100" data-role="EMPLOYEE" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Employee</button>
       </div>
 
       <div class="portal-card">
         <div class="portal-icon bg-success-subtle text-success"><i class="bi bi-people"></i></div>
-        <h5>Manager Portal</h5>
+        <h6>Manager Portal</h6>
         <p>Review team appraisals, submit ratings, and track performance trends.</p>
         <button class="btn btn-success w-100" data-role="MANAGER" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Manager</button>
       </div>
 
       <div class="portal-card">
         <div class="portal-icon bg-info-subtle text-info"><i class="bi bi-person-lines-fill"></i></div>
-        <h5>HR Portal</h5>
+        <h6>HR Portal</h6>
         <p>Generate reports, monitor risk signals, and manage appraisal cycles.</p>
         <button class="btn btn-info w-100" data-role="HR" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as HR</button>
       </div>
 
       <div class="portal-card">
         <div class="portal-icon bg-dark text-white"><i class="bi bi-gear"></i></div>
-        <h5>Admin Portal</h5>
+        <h6>Admin Portal</h6>
         <p>Configure roles, criteria, and system settings for all departments.</p>
         <button class="btn btn-dark w-100" data-role="ADMIN" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Admin</button>
       </div>
     </div>
-  </main>
+  </section>
 
   <!-- Login MODAL -->
   <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
@@ -191,20 +285,16 @@
         <div class="modal-body">
           <form method="POST" action="{{ url_for('login') }}">
             <input type="hidden" id="expected_role" name="expected_role" value="EMPLOYEE">
-
             <div class="mb-3">
               <label class="form-label">Username or Email</label>
               <input type="text" name="identifier" class="form-control" required>
             </div>
-
             <div class="mb-3">
               <label class="form-label">Password</label>
               <input type="password" name="password" class="form-control" required>
             </div>
-
             <button id="loginSubmitBtn" type="submit" class="btn btn-primary w-100">Login</button>
           </form>
-
           <p class="mt-3 text-center">
             <a href="{{ url_for('recover') }}" class="link-secondary">Forgot Password?</a>
           </p>
@@ -213,7 +303,7 @@
     </div>
   </div>
 
-  <!-- SIGN-UP (REGISTER) MODAL -->
+  <!-- SIGN-UP MODAL -->
   <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg">
@@ -221,18 +311,14 @@
           <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i> Create your account</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-
         <form class="needs-validation" method="POST" action="{{ url_for('register') }}" novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
           <div class="modal-body p-4">
-            <!-- Sample autofill buttons -->
             <div class="d-flex justify-content-end gap-2 mb-3" id="demoFillers">
               <button type="button" class="btn btn-outline-primary btn-sm" data-fill="employee">Sample: Employee</button>
               <button type="button" class="btn btn-outline-success btn-sm" data-fill="manager">Sample: Manager</button>
               <button type="button" class="btn btn-outline-info btn-sm" data-fill="hr">Sample: HR</button>
             </div>
-
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label">Username <span class="text-danger">*</span></label>
@@ -242,7 +328,6 @@
                   <div class="invalid-feedback">Please enter a username (3–32 chars).</div>
                 </div>
               </div>
-
               <div class="col-md-6">
                 <label class="form-label">Email <span class="text-danger">*</span></label>
                 <div class="input-group">
@@ -251,7 +336,6 @@
                   <div class="invalid-feedback">Enter a valid email.</div>
                 </div>
               </div>
-
               <div class="col-md-6">
                 <label class="form-label">Password <span class="text-danger">*</span></label>
                 <div class="input-group">
@@ -263,7 +347,6 @@
                 <div class="progress mt-2" style="height:6px"><div id="pwStrength" class="progress-bar" role="progressbar" style="width:0%"></div></div>
                 <div id="pwHint" class="form-text">Use upper/lowercase, a number, and a symbol.</div>
               </div>
-
               <div class="col-md-6">
                 <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
                 <div class="input-group">
@@ -273,7 +356,6 @@
                   <div class="invalid-feedback">Passwords must match.</div>
                 </div>
               </div>
-
               <div class="col-md-6">
                 <label class="form-label">Role <span class="text-danger">*</span></label>
                 <select id="signupRoleSelect" name="role" class="form-select" required>
@@ -284,7 +366,6 @@
                 </select>
                 <div class="invalid-feedback">Please select a role.</div>
               </div>
-
               <div class="col-md-6">
                 <label class="form-label">Agreement</label>
                 <div class="form-check">
@@ -296,7 +377,6 @@
                 </div>
               </div>
             </div>
-
             <hr class="my-4">
             <h6 class="mb-3"><i class="bi bi-card-checklist me-1"></i> Employee Details</h6>
             <div id="employeeFields" class="row g-3 d-none">
@@ -330,12 +410,8 @@
               </div>
             </div>
           </div>
-
           <div class="modal-footer d-flex justify-content-between">
-            <div class="text-muted small">
-              <i class="bi bi-shield-check me-1"></i>
-              New accounts are created as <strong>Pending</strong> until approved by an Admin.
-            </div>
+            <div class="text-muted small"><i class="bi bi-shield-check me-1"></i>New accounts are created as <strong>Pending</strong> until approved by an Admin.</div>
             <div class="d-flex gap-2">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
               <button id="signupSubmit" type="submit" class="btn btn-primary"><i class="bi bi-person-check"></i> Create Account</button>
@@ -346,8 +422,7 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="container text-center">
+  <footer>
     <small>&copy; 2025 Employee Attrition Prediction. All rights reserved.</small>
   </footer>
 
@@ -375,43 +450,31 @@
       btn.addEventListener('click', () => applyRole(btn.getAttribute('data-role')));
     });
 
-    // Signup modal enhancements (password strength, show/hide, employee fields)
+    // Sign-up helpers
     (function(){
       const form = document.querySelector('#signupModal form.needs-validation');
-      const pw1 = document.getElementById('pw1');
-      const pw2 = document.getElementById('pw2');
-      const bar = document.getElementById('pwStrength');
-      const hint = document.getElementById('pwHint');
-
+      const pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
+      const bar = document.getElementById('pwStrength'), hint = document.getElementById('pwHint');
       function togglePw(input, btnId){
-        const btn = document.getElementById(btnId);
-        const eye = btn.querySelector('i');
+        const btn = document.getElementById(btnId), eye = btn.querySelector('i');
         input.type = (input.type === 'password') ? 'text' : 'password';
         eye.className = (input.type === 'password') ? 'bi bi-eye' : 'bi bi-eye-slash';
       }
       document.getElementById('togglePw1')?.addEventListener('click', ()=>togglePw(pw1,'togglePw1'));
       document.getElementById('togglePw2')?.addEventListener('click', ()=>togglePw(pw2,'togglePw2'));
-
       function updateStrength(){
         const v = pw1?.value || '';
         const rules = [/[a-z]/,/[A-Z]/,/\d/,/[^A-Za-z0-9]/,/.{12,}/].map(r=>r.test(v));
-        const score = rules.filter(Boolean).length;
-        const pct = (score/5)*100;
-        bar.style.width = pct + '%';
-        bar.className = 'progress-bar';
+        const score = rules.filter(Boolean).length, pct = (score/5)*100;
+        bar.style.width = pct + '%'; bar.className = 'progress-bar';
         if (score <= 2) { bar.classList.add('bg-danger'); hint.textContent='Weak'; }
         else if (score === 3) { bar.classList.add('bg-warning'); hint.textContent='Fair'; }
         else if (score === 4) { bar.classList.add('bg-info'); hint.textContent='Good'; }
         else { bar.classList.add('bg-success'); hint.textContent='Strong'; }
       }
       pw1?.addEventListener('input', updateStrength);
-
-      function pwMatch(){
-        const ok = (pw1.value === pw2.value);
-        pw2.setCustomValidity(ok ? '' : 'Passwords do not match'); return ok;
-      }
+      function pwMatch(){ const ok = (pw1.value === pw2.value); pw2.setCustomValidity(ok?'':'Passwords do not match'); return ok; }
       pw2?.addEventListener('input', pwMatch);
-
       const roleSelect = document.getElementById('signupRoleSelect');
       const empWrap = document.getElementById('employeeFields');
       const empNames = ['name','employee_id','department','title','manager_name','phone','location'];
@@ -420,131 +483,67 @@
         empWrap?.classList.toggle('d-none', !isEmp);
         empNames.forEach(n=>{
           const el = document.querySelector(`#signupModal [name="${n}"]`);
-          if (!el) return;
-          if (isEmp) el.setAttribute('required','');
-          else el.removeAttribute('required');
+          if (!el) return; if (isEmp) el.setAttribute('required',''); else el.removeAttribute('required');
         });
       }
       roleSelect?.addEventListener('change', updateEmployeeFields);
-
       form?.addEventListener('submit', (ev)=>{
-        if (!form.checkValidity() || !pwMatch()) {
-          ev.preventDefault(); ev.stopPropagation();
-        }
+        if (!form.checkValidity() || !pwMatch()) { ev.preventDefault(); ev.stopPropagation(); }
         form.classList.add('was-validated');
       });
     })();
 
-    /* === Demo autofill buttons (Employee, Manager, HR) === */
+    // Demo autofill for sign-up
     (function(){
       const samples = {
-        employee: {
-          username: "evelyn.park",
-          email: "evelyn.park@acme.com",
-          password: "EPark#2025!",
-          role: "EMPLOYEE",
-          agree: true,
-          details: {
-            name: "Evelyn Park", employee_id: "E10234", department: "Sales",
-            title: "Sales Associate", manager_name: "Jordan Reed",
-            phone: "512-555-0163", location: "Austin, TX"
-          }
-        },
-        manager: {
-          username: "marco.lee",
-          email: "marco.lee@acme.com",
-          password: "MLee#2025!",
-          role: "MANAGER",
-          agree: true
-        },
-        hr: {
-          username: "nina.patel",
-          email: "nina.patel@acme.com",
-          password: "NPatel#2025!",
-          role: "HR",
-          agree: true
-        }
+        employee: { username:"evelyn.park", email:"evelyn.park@acme.com", password:"EPark#2025!", role:"EMPLOYEE", agree:true,
+          details:{ name:"Evelyn Park", employee_id:"E10234", department:"Sales", title:"Sales Associate", manager_name:"Jordan Reed", phone:"512-555-0163", location:"Austin, TX" } },
+        manager:  { username:"marco.lee",  email:"marco.lee@acme.com",  password:"MLee#2025!",  role:"MANAGER", agree:true },
+        hr:       { username:"nina.patel", email:"nina.patel@acme.com", password:"NPatel#2025!", role:"HR", agree:true }
       };
-
-      const $form   = document.querySelector('#signupModal form.needs-validation');
-      if (!$form) return;
-
-      const $user   = $form.querySelector('[name="username"]');
-      const $email  = $form.querySelector('[name="email"]');
-      const $pw1    = $form.querySelector('#pw1');
-      const $pw2    = $form.querySelector('#pw2');
-      const $role   = $form.querySelector('#signupRoleSelect');
-      const $agree  = $form.querySelector('#agree');
-
-      function setVal(el, v){
-        if(!el) return;
-        el.value = v;
-        el.dispatchEvent(new Event('input', { bubbles:true }));
+      const $form=document.querySelector('#signupModal form.needs-validation'); if(!$form) return;
+      const $user=$form.querySelector('[name="username"]'), $email=$form.querySelector('[name="email"]');
+      const $pw1=$form.querySelector('#pw1'), $pw2=$form.querySelector('#pw2');
+      const $role=$form.querySelector('#signupRoleSelect'), $agree=$form.querySelector('#agree');
+      function setVal(el,v){ if(el){ el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); } }
+      function setChange(el){ if(el){ el.dispatchEvent(new Event('change',{bubbles:true})); } }
+      function fillDetails(d){ if(!d)return; ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{ const el=$form.querySelector(`[name="${n}"]`); if(el && d[n]!==undefined) setVal(el,d[n]); }); }
+      function clearDetails(){ ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{ const el=$form.querySelector(`[name="${n}"]`); if(el) el.value=''; }); }
+      function fillSample(k){
+        const d=samples[k]; if(!d) return; $form.classList.remove('was-validated');
+        setVal($user,d.username); setVal($email,d.email); setVal($pw1,d.password); setVal($pw2,d.password);
+        if($agree){ $agree.checked=!!d.agree; setChange($agree); }
+        if($role){ $role.value=d.role; setChange($role); }
+        if(d.role==='EMPLOYEE') fillDetails(d.details); else clearDetails();
+        $pw1?.dispatchEvent(new Event('input',{bubbles:true}));
       }
-      function setChange(el){
-        if(!el) return;
-        el.dispatchEvent(new Event('change', { bubbles:true }));
-      }
-      function fillDetails(d){
-        if(!d) return;
-        ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{
-          const el = $form.querySelector(`[name="${n}"]`);
-          if (el && d[n] !== undefined) setVal(el, d[n]);
-        });
-      }
-      function clearEmployeeDetails(){
-        ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{
-          const el = $form.querySelector(`[name="${n}"]`);
-          if(el) el.value = '';
-        });
-      }
-
-      function fillSample(key){
-        const data = samples[key];
-        if(!data) return;
-
-        $form.classList.remove('was-validated');
-
-        setVal($user,  data.username);
-        setVal($email, data.email);
-        setVal($pw1,   data.password);
-        setVal($pw2,   data.password);
-
-        if ($agree){ $agree.checked = !!data.agree; setChange($agree); }
-
-        if ($role){
-          $role.value = data.role;
-          setChange($role); // triggers employee field toggle
-        }
-
-        if (data.role === 'EMPLOYEE') fillDetails(data.details);
-        else clearEmployeeDetails();
-
-        $pw1?.dispatchEvent(new Event('input', { bubbles:true })); // refresh strength
-      }
-
-      document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>{
-        btn.addEventListener('click', ()=> fillSample(btn.dataset.fill));
-      });
+      document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>btn.addEventListener('click',()=>fillSample(btn.dataset.fill)));
     })();
 
-  // Auto-open modals via ?open=signup|login|login_employee|login_manager|login_hr|login_admin
-  (function(){
-    const params = new URLSearchParams(location.search);
-    const open = params.get('open');
-    if (!open) return;
+    // Auto-open modals via ?open=... (one-time; won't re-open on refresh)
+    (function () {
+      const params = new URLSearchParams(location.search);
+      const open = params.get('open');
+      if (!open) return;
 
-    const modal = (name) => new bootstrap.Modal(document.getElementById(name));
-    if (open === 'signup' || open === 'register') {
-      modal('signupModal').show();
-    } else if (open.startsWith('login')) {
-      // choose role styling then show
-      const parts = open.split('_');
-      const role = (parts[1] || '').toUpperCase();
-      if (role) applyRole(role);
-      modal('loginModal').show();
-    }
-  })();
+      if (sessionStorage.getItem('openParamConsumed') === '1') {
+        history.replaceState(null, '', location.pathname + (location.hash || ''));
+        return;
+      }
+      sessionStorage.setItem('openParamConsumed', '1');
+
+      const modal = (id) => new bootstrap.Modal(document.getElementById(id));
+      if (open === 'signup' || open === 'register') {
+        modal('signupModal').show();
+      } else if (open.startsWith('login')) {
+        const parts = open.split('_');
+        const role = (parts[1] || '').toUpperCase();
+        if (role) applyRole(role);
+        modal('loginModal').show();
+      }
+      history.replaceState(null, '', location.pathname + (location.hash || ''));
+    })();
+
   </script>
 </body>
 </html>
