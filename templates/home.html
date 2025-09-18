@@ -34,21 +34,10 @@
       background: #fff;
       box-shadow: 0 2px 16px rgba(0,0,0,.04);
     }
-    .nav-actions {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-    @media (max-width: 768px){
-      .nav-actions {
-        flex-direction: column;
-        width: 100%;
-        padding-top: 10px;
-      }
-      .nav-actions a, .nav-actions button {
-        width: 100%;
-        text-align: center;
-      }
+    .nav-actions { display:flex; gap:12px; align-items:center; }
+    @media (max-width:768px){
+      .nav-actions { flex-direction:column; width:100%; padding-top:10px; }
+      .nav-actions a, .nav-actions button { width:100%; text-align:center; }
     }
 
     /* Hero */
@@ -58,11 +47,7 @@
       min-height: 320px;
       background: var(--hero-bg);
     }
-    .hero-content{
-      position: relative;
-      padding: 84px 0 56px;
-      text-align: center;
-    }
+    .hero-content{ position: relative; padding: 84px 0 56px; text-align: center; }
     .hero-content h1{
       font-family: "Poppins", sans-serif;
       font-weight: 700;
@@ -78,11 +63,7 @@
       -webkit-text-stroke: .35px rgba(255,255,255,.35);
       text-shadow: 0 0 18px rgba(99,102,241,.45), 0 2px 22px rgba(13,110,253,.35);
     }
-    .hero-subtitle{
-      color: rgba(255,255,255,.92);
-      max-width: 720px;
-      margin: 0 auto;
-    }
+    .hero-subtitle{ color: rgba(255,255,255,.92); max-width: 720px; margin: 0 auto; }
 
     /* Portal cards */
     .portal-grid{
@@ -90,12 +71,8 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 18px;
     }
-    @media (max-width: 992px){
-      .portal-grid{ grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 576px){
-      .portal-grid{ grid-template-columns: 1fr; }
-    }
+    @media (max-width: 992px){ .portal-grid{ grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 576px){ .portal-grid{ grid-template-columns: 1fr; } }
     .portal-card{
       background: var(--surface);
       border: 1px solid rgba(0,0,0,.06);
@@ -111,24 +88,14 @@
       border-color: rgba(13,110,253,.25);
     }
     .portal-icon{
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 0 auto 14px;
-      font-size: 2rem;
-      height: 60px;
-      width: 60px;
-      border-radius: 50%;
+      display:flex; justify-content:center; align-items:center;
+      margin:0 auto 14px; font-size:2rem; height:60px; width:60px; border-radius:50%;
     }
     .portal-card h5{ margin: 8px 0 6px; }
     .portal-card p{ margin: 0 0 16px; color: var(--text-muted); }
 
     /* Footer */
-    footer{
-      color: var(--text-muted);
-      padding: 28px 0 36px;
-    }
-
+    footer{ color: var(--text-muted); padding: 28px 0 36px; }
     .flash-wrap{ margin-top: 16px; }
   </style>
 </head>
@@ -143,7 +110,8 @@
       </a>
       <div class="ms-auto nav-actions">
         <a href="{{ url_for('recover') }}" class="link-secondary text-decoration-none">Forgot Password</a>
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#signupModal">
+        <!-- Open the REGISTER MODAL directly -->
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#signupModal">
           <i class="bi bi-person-plus"></i> Create Account
         </button>
       </div>
@@ -179,59 +147,204 @@
   <!-- Portals -->
   <main class="container my-4">
     <div class="portal-grid">
-
-      <!-- Employee -->
       <div class="portal-card">
-        <div class="portal-icon bg-primary-subtle text-primary">
-          <i class="bi bi-person-badge"></i>
-        </div>
+        <div class="portal-icon bg-primary-subtle text-primary"><i class="bi bi-person-badge"></i></div>
         <h5>Employee Portal</h5>
         <p>Access your dashboard, view appraisal history, and submit self-assessments.</p>
-        <button class="btn btn-primary w-100" data-role="EMPLOYEE" data-bs-toggle="modal" data-bs-target="#loginModal">
-          Continue as Employee
-        </button>
+        <button class="btn btn-primary w-100" data-role="EMPLOYEE" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Employee</button>
       </div>
 
-      <!-- Manager -->
       <div class="portal-card">
-        <div class="portal-icon bg-success-subtle text-success">
-          <i class="bi bi-people"></i>
-        </div>
+        <div class="portal-icon bg-success-subtle text-success"><i class="bi bi-people"></i></div>
         <h5>Manager Portal</h5>
         <p>Review team appraisals, submit ratings, and track performance trends.</p>
-        <button class="btn btn-success w-100" data-role="MANAGER" data-bs-toggle="modal" data-bs-target="#loginModal">
-          Continue as Manager
-        </button>
+        <button class="btn btn-success w-100" data-role="MANAGER" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Manager</button>
       </div>
 
-      <!-- HR -->
       <div class="portal-card">
-        <div class="portal-icon bg-info-subtle text-info">
-          <i class="bi bi-person-lines-fill"></i>
-        </div>
+        <div class="portal-icon bg-info-subtle text-info"><i class="bi bi-person-lines-fill"></i></div>
         <h5>HR Portal</h5>
         <p>Generate reports, monitor risk signals, and manage appraisal cycles.</p>
-        <button class="btn btn-info w-100" data-role="HR" data-bs-toggle="modal" data-bs-target="#loginModal">
-          Continue as HR
-        </button>
+        <button class="btn btn-info w-100" data-role="HR" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as HR</button>
       </div>
 
-      <!-- Admin -->
       <div class="portal-card">
-        <div class="portal-icon bg-dark text-white">
-          <i class="bi bi-gear"></i>
-        </div>
+        <div class="portal-icon bg-dark text-white"><i class="bi bi-gear"></i></div>
         <h5>Admin Portal</h5>
         <p>Configure roles, criteria, and system settings for all departments.</p>
-        <button class="btn btn-dark w-100" data-role="ADMIN" data-bs-toggle="modal" data-bs-target="#loginModal">
-          Continue as Admin
-        </button>
+        <button class="btn btn-dark w-100" data-role="ADMIN" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Admin</button>
       </div>
-
     </div>
   </main>
 
-  <!-- Login + Signup Modals (keep your existing ones here) -->
+  <!-- Login MODAL -->
+  <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div id="loginModalHeader" class="modal-header text-white bg-primary">
+          <h5 class="modal-title">
+            <span id="loginRoleIcon" class="me-2"></span>
+            <span id="loginRoleTitle">Sign in</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="POST" action="{{ url_for('login') }}">
+            <input type="hidden" id="expected_role" name="expected_role" value="EMPLOYEE">
+
+            <div class="mb-3">
+              <label class="form-label">Username or Email</label>
+              <input type="text" name="identifier" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <input type="password" name="password" class="form-control" required>
+            </div>
+
+            <button id="loginSubmitBtn" type="submit" class="btn btn-primary w-100">Login</button>
+          </form>
+
+          <p class="mt-3 text-center">
+            <a href="{{ url_for('recover') }}" class="link-secondary">Forgot Password?</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGN-UP (REGISTER) MODAL -->
+  <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header text-white" style="background:linear-gradient(90deg,#0d6efd,#6f42c1)">
+          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i> Create your account</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <form class="needs-validation" method="POST" action="{{ url_for('register') }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+          <div class="modal-body p-4">
+            <!-- Sample autofill buttons -->
+            <div class="d-flex justify-content-end gap-2 mb-3" id="demoFillers">
+              <button type="button" class="btn btn-outline-primary btn-sm" data-fill="employee">Sample: Employee</button>
+              <button type="button" class="btn btn-outline-success btn-sm" data-fill="manager">Sample: Manager</button>
+              <button type="button" class="btn btn-outline-info btn-sm" data-fill="hr">Sample: HR</button>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Username <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-person"></i></span>
+                  <input name="username" type="text" class="form-control" placeholder="e.g. jdoe" required minlength="3" maxlength="32">
+                  <div class="invalid-feedback">Please enter a username (3–32 chars).</div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                  <input name="email" type="email" class="form-control" placeholder="you@company.com" required>
+                  <div class="invalid-feedback">Enter a valid email.</div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Password <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                  <input id="pw1" name="password" type="password" class="form-control" placeholder="At least 8 characters" required minlength="8">
+                  <button class="btn btn-outline-secondary" type="button" id="togglePw1" aria-label="Show/Hide"><i class="bi bi-eye"></i></button>
+                  <div class="invalid-feedback">Minimum 8 characters.</div>
+                </div>
+                <div class="progress mt-2" style="height:6px"><div id="pwStrength" class="progress-bar" role="progressbar" style="width:0%"></div></div>
+                <div id="pwHint" class="form-text">Use upper/lowercase, a number, and a symbol.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                  <input id="pw2" name="confirm_password" type="password" class="form-control" placeholder="Re-type password" required minlength="8">
+                  <button class="btn btn-outline-secondary" type="button" id="togglePw2" aria-label="Show/Hide"><i class="bi bi-eye"></i></button>
+                  <div class="invalid-feedback">Passwords must match.</div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Role <span class="text-danger">*</span></label>
+                <select id="signupRoleSelect" name="role" class="form-select" required>
+                  <option value="" selected disabled>Choose a role…</option>
+                  <option value="EMPLOYEE">Employee</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="HR">HR</option>
+                </select>
+                <div class="invalid-feedback">Please select a role.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Agreement</label>
+                <div class="form-check">
+                  <input id="agree" class="form-check-input" type="checkbox" required>
+                  <label class="form-check-label" for="agree">
+                    I agree to the <a href="#" class="link-secondary">Terms</a> and <a href="#" class="link-secondary">Privacy Policy</a>.
+                  </label>
+                  <div class="invalid-feedback">You must accept the terms to continue.</div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-4">
+            <h6 class="mb-3"><i class="bi bi-card-checklist me-1"></i> Employee Details</h6>
+            <div id="employeeFields" class="row g-3 d-none">
+              <div class="col-md-6">
+                <label class="form-label">Full Name</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-person-vcard"></i></span><input name="name" type="text" class="form-control" placeholder="e.g. Jane Doe"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Employee ID</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-hash"></i></span><input name="employee_id" type="text" class="form-control" placeholder="e.g. EMP-00123"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Department</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-building"></i></span><input name="department" type="text" class="form-control" placeholder="e.g. Engineering"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Job Title</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-briefcase"></i></span><input name="title" type="text" class="form-control" placeholder="e.g. Software Engineer"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Manager</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-person-gear"></i></span><input name="manager_name" type="text" class="form-control" placeholder="e.g. Alex Smith"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Phone</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-telephone"></i></span><input name="phone" type="text" class="form-control" placeholder="e.g. +1 555 555 5555"></div>
+              </div>
+              <div class="col-md-12">
+                <label class="form-label">Location</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-geo-alt"></i></span><input name="location" type="text" class="form-control" placeholder="e.g. New York, NY"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer d-flex justify-content-between">
+            <div class="text-muted small">
+              <i class="bi bi-shield-check me-1"></i>
+              New accounts are created as <strong>Pending</strong> until approved by an Admin.
+            </div>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button id="signupSubmit" type="submit" class="btn btn-primary"><i class="bi bi-person-check"></i> Create Account</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- Footer -->
   <footer class="container text-center">
@@ -240,5 +353,198 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Role presets for login modal
+    const rolePresets = {
+      EMPLOYEE:{ title:"Employee Login", header:"bg-primary", btn:"btn-primary", icon:'<i class="bi bi-person-badge"></i>' },
+      MANAGER: { title:"Manager Login",  header:"bg-success", btn:"btn-success", icon:'<i class="bi bi-people"></i>' },
+      HR:      { title:"HR Login",       header:"bg-info",    btn:"btn-info",    icon:'<i class="bi bi-person-lines-fill"></i>' },
+      ADMIN:   { title:"Admin Login",    header:"bg-dark",    btn:"btn-dark",    icon:'<i class="bi bi-gear"></i>' },
+    };
+    function applyRole(role){
+      const preset = rolePresets[role] || rolePresets.EMPLOYEE;
+      document.getElementById('expected_role').value = role;
+      document.getElementById('loginRoleTitle').textContent = preset.title;
+      document.getElementById('loginRoleIcon').innerHTML = preset.icon;
+      const header = document.getElementById('loginModalHeader');
+      header.className = 'modal-header text-white ' + preset.header;
+      const btn = document.getElementById('loginSubmitBtn');
+      btn.className = 'btn w-100 ' + preset.btn;
+    }
+    document.querySelectorAll('[data-role]').forEach(btn => {
+      btn.addEventListener('click', () => applyRole(btn.getAttribute('data-role')));
+    });
+
+    // Signup modal enhancements (password strength, show/hide, employee fields)
+    (function(){
+      const form = document.querySelector('#signupModal form.needs-validation');
+      const pw1 = document.getElementById('pw1');
+      const pw2 = document.getElementById('pw2');
+      const bar = document.getElementById('pwStrength');
+      const hint = document.getElementById('pwHint');
+
+      function togglePw(input, btnId){
+        const btn = document.getElementById(btnId);
+        const eye = btn.querySelector('i');
+        input.type = (input.type === 'password') ? 'text' : 'password';
+        eye.className = (input.type === 'password') ? 'bi bi-eye' : 'bi bi-eye-slash';
+      }
+      document.getElementById('togglePw1')?.addEventListener('click', ()=>togglePw(pw1,'togglePw1'));
+      document.getElementById('togglePw2')?.addEventListener('click', ()=>togglePw(pw2,'togglePw2'));
+
+      function updateStrength(){
+        const v = pw1?.value || '';
+        const rules = [/[a-z]/,/[A-Z]/,/\d/,/[^A-Za-z0-9]/,/.{12,}/].map(r=>r.test(v));
+        const score = rules.filter(Boolean).length;
+        const pct = (score/5)*100;
+        bar.style.width = pct + '%';
+        bar.className = 'progress-bar';
+        if (score <= 2) { bar.classList.add('bg-danger'); hint.textContent='Weak'; }
+        else if (score === 3) { bar.classList.add('bg-warning'); hint.textContent='Fair'; }
+        else if (score === 4) { bar.classList.add('bg-info'); hint.textContent='Good'; }
+        else { bar.classList.add('bg-success'); hint.textContent='Strong'; }
+      }
+      pw1?.addEventListener('input', updateStrength);
+
+      function pwMatch(){
+        const ok = (pw1.value === pw2.value);
+        pw2.setCustomValidity(ok ? '' : 'Passwords do not match'); return ok;
+      }
+      pw2?.addEventListener('input', pwMatch);
+
+      const roleSelect = document.getElementById('signupRoleSelect');
+      const empWrap = document.getElementById('employeeFields');
+      const empNames = ['name','employee_id','department','title','manager_name','phone','location'];
+      function updateEmployeeFields(){
+        const isEmp = roleSelect?.value === 'EMPLOYEE';
+        empWrap?.classList.toggle('d-none', !isEmp);
+        empNames.forEach(n=>{
+          const el = document.querySelector(`#signupModal [name="${n}"]`);
+          if (!el) return;
+          if (isEmp) el.setAttribute('required','');
+          else el.removeAttribute('required');
+        });
+      }
+      roleSelect?.addEventListener('change', updateEmployeeFields);
+
+      form?.addEventListener('submit', (ev)=>{
+        if (!form.checkValidity() || !pwMatch()) {
+          ev.preventDefault(); ev.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      });
+    })();
+
+    /* === Demo autofill buttons (Employee, Manager, HR) === */
+    (function(){
+      const samples = {
+        employee: {
+          username: "evelyn.park",
+          email: "evelyn.park@acme.com",
+          password: "EPark#2025!",
+          role: "EMPLOYEE",
+          agree: true,
+          details: {
+            name: "Evelyn Park", employee_id: "E10234", department: "Sales",
+            title: "Sales Associate", manager_name: "Jordan Reed",
+            phone: "512-555-0163", location: "Austin, TX"
+          }
+        },
+        manager: {
+          username: "marco.lee",
+          email: "marco.lee@acme.com",
+          password: "MLee#2025!",
+          role: "MANAGER",
+          agree: true
+        },
+        hr: {
+          username: "nina.patel",
+          email: "nina.patel@acme.com",
+          password: "NPatel#2025!",
+          role: "HR",
+          agree: true
+        }
+      };
+
+      const $form   = document.querySelector('#signupModal form.needs-validation');
+      if (!$form) return;
+
+      const $user   = $form.querySelector('[name="username"]');
+      const $email  = $form.querySelector('[name="email"]');
+      const $pw1    = $form.querySelector('#pw1');
+      const $pw2    = $form.querySelector('#pw2');
+      const $role   = $form.querySelector('#signupRoleSelect');
+      const $agree  = $form.querySelector('#agree');
+
+      function setVal(el, v){
+        if(!el) return;
+        el.value = v;
+        el.dispatchEvent(new Event('input', { bubbles:true }));
+      }
+      function setChange(el){
+        if(!el) return;
+        el.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+      function fillDetails(d){
+        if(!d) return;
+        ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{
+          const el = $form.querySelector(`[name="${n}"]`);
+          if (el && d[n] !== undefined) setVal(el, d[n]);
+        });
+      }
+      function clearEmployeeDetails(){
+        ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{
+          const el = $form.querySelector(`[name="${n}"]`);
+          if(el) el.value = '';
+        });
+      }
+
+      function fillSample(key){
+        const data = samples[key];
+        if(!data) return;
+
+        $form.classList.remove('was-validated');
+
+        setVal($user,  data.username);
+        setVal($email, data.email);
+        setVal($pw1,   data.password);
+        setVal($pw2,   data.password);
+
+        if ($agree){ $agree.checked = !!data.agree; setChange($agree); }
+
+        if ($role){
+          $role.value = data.role;
+          setChange($role); // triggers employee field toggle
+        }
+
+        if (data.role === 'EMPLOYEE') fillDetails(data.details);
+        else clearEmployeeDetails();
+
+        $pw1?.dispatchEvent(new Event('input', { bubbles:true })); // refresh strength
+      }
+
+      document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>{
+        btn.addEventListener('click', ()=> fillSample(btn.dataset.fill));
+      });
+    })();
+
+  // Auto-open modals via ?open=signup|login|login_employee|login_manager|login_hr|login_admin
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const open = params.get('open');
+    if (!open) return;
+
+    const modal = (name) => new bootstrap.Modal(document.getElementById(name));
+    if (open === 'signup' || open === 'register') {
+      modal('signupModal').show();
+    } else if (open.startsWith('login')) {
+      // choose role styling then show
+      const parts = open.split('_');
+      const role = (parts[1] || '').toUpperCase();
+      if (role) applyRole(role);
+      modal('loginModal').show();
+    }
+  })();
+  </script>
 </body>
 </html>
