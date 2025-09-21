@@ -9,18 +9,16 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-  <!-- Fonts: Poppins (title), Pacifico fallback for cursive -->
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Pacifico&display=swap" rel="stylesheet">
 
   <style>
     :root{
       --brand-primary:#0d6efd;
-      --hero-bg:#165f73;       /* teal/blue hero */
+      --hero-bg:#165f73;
       --panel-border:#0e1720;
       --note-bg:#eef2f7;
     }
-
-    /* Billion Dreams font */
     @font-face{
       font-family:"Billion Dreams";
       src:url("{{ url_for('static', filename='fonts/BillionDreams.ttf') }}") format("truetype");
@@ -28,140 +26,48 @@
       font-style:normal;
       font-display:swap;
     }
+    /* reset default body margin so edges line up exactly */
+    body{ margin:0; background:#fff; color:#111;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
 
-    body{
-      background:#ffffff;
-      color:#111;
-      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-    }
-
-    /* top bar */
     .navbar{
-      background:#fff;
-      border:1px solid #dfe3ea;
-      border-radius:6px;
-      margin:16px 16px 0;
-      padding:6px 10px;
+      background:#fff; border:1px solid #dfe3ea; border-radius:6px;
+      margin:16px 16px 0; padding:6px 10px;
     }
-
-    /* HERO (taller, teal-blue, thin border) */
     .hero{
-      background:var(--hero-bg);
-      color:#fff;
-      border:1px solid #0b1325;
-      border-radius:6px;
-      margin:10px 16px 16px;
-      padding:72px 10px 64px;  /* extended height */
-      min-height:380px;
-      text-align:center;
+      background:var(--hero-bg); color:#fff; border:1px solid #0b1325; border-radius:6px;
+      margin:10px 16px 16px; padding:72px 10px 64px; min-height:380px; text-align:center;
     }
-    .hero .kicker{
-      font-family:"Billion Dreams","Pacifico",cursive;
-      font-size:clamp(20px, 2.6vw, 28px);
-      line-height:1.15;
-      margin-bottom:16px;
-    }
-    .hero .title{
-      font-family:"Poppins",sans-serif;
-      text-transform:uppercase;
-      letter-spacing:.02em;
-      font-weight:700;
-      font-size:clamp(22px,4.2vw,42px);
-      margin:0 8px 18px;
-    }
-    .hero .tag{
-      font-family:"Pristina","Billion Dreams","Pacifico",cursive;
-      font-size:clamp(16px, 2.2vw, 22px);
-      line-height:1.2;
-    }
+    .hero .kicker{ font-family:"Billion Dreams","Pacifico",cursive; font-size:clamp(20px,2.6vw,28px); line-height:1.15; margin-bottom:16px; }
+    .hero .title{ font-family:"Poppins",sans-serif; text-transform:uppercase; letter-spacing:.02em; font-weight:700; font-size:clamp(22px,4.2vw,42px); margin:0 8px 18px; }
+    .hero .tag{ font-family:"Pristina","Billion Dreams","Pacifico",cursive; font-size:clamp(16px,2.2vw,22px); line-height:1.2; }
 
-    /* two white panels row (compact height) */
+    /* panels */
     .panels-wrap{ margin:0 16px 8px; }
+    .panel-white{ background:#fff; border:2px solid var(--panel-border); border-radius:4px; min-height:160px; padding:12px 16px 14px; }
 
-    .panel-white{
-      background:#fff;
-      border:2px solid var(--panel-border);
-      border-radius:4px;
-      min-height:160px;
-      padding:12px 16px 14px;
-    }
+    /* grid keeps only the middle gap, edges are flush with hero */
+    .two-panels{ display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+    @media (max-width: 992px){ .two-panels{ grid-template-columns:1fr; } }
+    .two-panels > .panel-cell{ display:flex; }
+    .two-panels > .panel-cell .panel-white{ display:flex; flex-direction:column; height:100%; }
 
-    /* === Two-panels row: perfect edge alignment via CSS Grid === */
-    .panels-wrap .two-panels{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:1.5rem;     /* center gap only */
-      margin:0;       /* no outer margins – aligns with the hero edges */
-    }
-    /* Stack on smaller screens */
-    @media (max-width: 992px){
-      .panels-wrap .two-panels{ grid-template-columns:1fr; }
-    }
-    /* Equal height panels */
-    .panels-wrap .two-panels > .panel-cell{ display:flex; }
-    .panels-wrap .two-panels > .panel-cell .panel-white{
-      display:flex;
-      flex-direction:column;
-      height:100%;
-    }
-
-    .panel-heading{
-      font-family:"Poppins",sans-serif;
-      text-transform:uppercase;
-      font-weight:700;
-      font-size:clamp(14px,2vw,18px);
-      text-align:center;
-      margin-bottom:8px;
-    }
+    .panel-heading{ font-family:"Poppins",sans-serif; text-transform:uppercase; font-weight:700; font-size:clamp(14px,2vw,18px); text-align:center; margin-bottom:8px; }
     .panel-white p{ color:#344054; margin-bottom:.6rem; }
     .panel-white ul{ margin:.25rem 0 .5rem 1.25rem; }
     .panel-white li{ color:#344054; }
 
-    /* instruction block + portals container */
     .instructions-block{
-      margin:14px 16px 0;
-      background:var(--note-bg);
-      border:1px solid #cfd6df;
-      border-radius:6px;
-      padding:10px 12px 0;
+      margin:14px 16px 0; background:var(--note-bg); border:1px solid #cfd6df; border-radius:6px; padding:10px 12px 0;
     }
     .instructions-block .leadline{ font-weight:600; }
-    .instructions-block ol{
-      margin:6px 0 10px 20px;
-      color:#334155;
-      font-size:14px;
-    }
-    .portal-grid{
-      display:grid;
-      grid-template-columns:repeat(4, minmax(0,1fr));
-      gap:14px;
-      padding:12px 6px 16px;
-    }
+    .instructions-block ol{ margin:6px 0 10px 20px; color:#334155; font-size:14px; }
+    .portal-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; padding:12px 6px 16px; }
     @media (max-width: 992px){ .portal-grid{ grid-template-columns:repeat(2,1fr);} }
     @media (max-width: 576px){ .portal-grid{ grid-template-columns:1fr;} }
-
-    .portal-card{
-      background:#fff;
-      border:1px solid #e6e9ee;
-      border-radius:12px;
-      padding:18px;
-      text-align:center;
-      box-shadow:0 2px 6px rgba(0,0,0,.04);
-    }
-    .portal-icon{
-      display:flex;align-items:center;justify-content:center;
-      width:64px;height:64px;border-radius:50%;margin:0 auto 10px;
-      font-size:28px;
-    }
-    .portal-card p{ color:#6b7280; font-size:14px; }
-
-    footer{
-      border-top:1px solid #e7eaf0;
-      margin:10px 16px;
-      padding:8px 0 16px;
-      color:#6b7280;
-      text-align:center;
-    }
+    .portal-card{ background:#fff; border:1px solid #e6e9ee; border-radius:12px; padding:18px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.04); }
+    .portal-icon{ display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; margin:0 auto 10px; font-size:28px; }
+    footer{ border-top:1px solid #e7eaf0; margin:10px 16px; padding:8px 0 16px; color:#6b7280; text-align:center; }
   </style>
 </head>
 <body>
@@ -203,7 +109,7 @@
     <div class="tag">Role-based HR platform that blends performance management with machine-learning attrition insights</div>
   </header>
 
-  <!-- Two Panels (CSS Grid, flush with hero edges) -->
+  <!-- Two Panels -->
   <section class="panels-wrap">
     <div class="two-panels">
       <div class="panel-cell">
@@ -215,7 +121,6 @@
           </p>
         </div>
       </div>
-
       <div class="panel-cell">
         <div class="panel-white">
           <div class="panel-heading">What it can do</div>
@@ -241,32 +146,33 @@
     </ol>
 
     <div class="portal-grid">
+      <!-- make sure these are type="button" so no stray form submits anywhere -->
       <div class="portal-card">
         <div class="portal-icon bg-primary-subtle text-primary"><i class="bi bi-person-badge"></i></div>
         <h6>Employee Portal</h6>
         <p>Access your dashboard, view appraisal history, and submit self-assessments.</p>
-        <button class="btn btn-primary w-100" data-role="EMPLOYEE" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Employee</button>
+        <button type="button" class="btn btn-primary w-100" data-role="EMPLOYEE" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Employee</button>
       </div>
 
       <div class="portal-card">
         <div class="portal-icon bg-success-subtle text-success"><i class="bi bi-people"></i></div>
         <h6>Manager Portal</h6>
         <p>Review team appraisals, submit ratings, and track performance trends.</p>
-        <button class="btn btn-success w-100" data-role="MANAGER" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Manager</button>
+        <button type="button" class="btn btn-success w-100" data-role="MANAGER" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Manager</button>
       </div>
 
       <div class="portal-card">
         <div class="portal-icon bg-info-subtle text-info"><i class="bi bi-person-lines-fill"></i></div>
         <h6>HR Portal</h6>
         <p>Generate reports, monitor risk signals, and manage appraisal cycles.</p>
-        <button class="btn btn-info w-100" data-role="HR" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as HR</button>
+        <button type="button" class="btn btn-info w-100" data-role="HR" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as HR</button>
       </div>
 
       <div class="portal-card">
         <div class="portal-icon bg-dark text-white"><i class="bi bi-gear"></i></div>
         <h6>Admin Portal</h6>
         <p>Configure roles, criteria, and system settings for all departments.</p>
-        <button class="btn btn-dark w-100" data-role="ADMIN" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Admin</button>
+        <button type="button" class="btn btn-dark w-100" data-role="ADMIN" data-bs-toggle="modal" data-bs-target="#loginModal">Continue as Admin</button>
       </div>
     </div>
   </section>
@@ -287,11 +193,11 @@
             <input type="hidden" id="expected_role" name="expected_role" value="EMPLOYEE">
             <div class="mb-3">
               <label class="form-label">Username or Email</label>
-              <input type="text" name="identifier" class="form-control" required>
+              <input type="text" name="identifier" class="form-control" required autocomplete="username">
             </div>
             <div class="mb-3">
               <label class="form-label">Password</label>
-              <input type="password" name="password" class="form-control" required>
+              <input type="password" name="password" class="form-control" required autocomplete="current-password">
             </div>
             <button id="loginSubmitBtn" type="submit" class="btn btn-primary w-100">Login</button>
           </form>
@@ -303,130 +209,131 @@
     </div>
   </div>
 
+  <!-- SIGN-UP MODAL (unchanged) -->
   <!-- SIGN-UP MODAL -->
-  <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header text-white" style="background:linear-gradient(90deg,#0d6efd,#6f42c1)">
-          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i> Create your account</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
+<div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary text-white">
+        <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Create your account</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
         <form class="needs-validation" method="POST" action="{{ url_for('register') }}" novalidate>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <div class="modal-body p-4">
-            <div class="d-flex justify-content-end gap-2 mb-3" id="demoFillers">
-              <button type="button" class="btn btn-outline-primary btn-sm" data-fill="employee">Sample: Employee</button>
-              <button type="button" class="btn btn-outline-success btn-sm" data-fill="manager">Sample: Manager</button>
-              <button type="button" class="btn btn-outline-info btn-sm" data-fill="hr">Sample: HR</button>
+
+          {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Username</label>
+              <input type="text" name="username" class="form-control" required autocomplete="username">
+              <div class="invalid-feedback">Username is required.</div>
             </div>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Username <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-person"></i></span>
-                  <input name="username" type="text" class="form-control" placeholder="e.g. jdoe" required minlength="3" maxlength="32">
-                  <div class="invalid-feedback">Please enter a username (3–32 chars).</div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Email <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                  <input name="email" type="email" class="form-control" placeholder="you@company.com" required>
-                  <div class="invalid-feedback">Enter a valid email.</div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Password <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                  <input id="pw1" name="password" type="password" class="form-control" placeholder="At least 8 characters" required minlength="8">
-                  <button class="btn btn-outline-secondary" type="button" id="togglePw1" aria-label="Show/Hide"><i class="bi bi-eye"></i></button>
-                  <div class="invalid-feedback">Minimum 8 characters.</div>
-                </div>
-                <div class="progress mt-2" style="height:6px"><div id="pwStrength" class="progress-bar" role="progressbar" style="width:0%"></div></div>
-                <div id="pwHint" class="form-text">Use upper/lowercase, a number, and a symbol.</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                  <input id="pw2" name="confirm_password" type="password" class="form-control" placeholder="Re-type password" required minlength="8">
-                  <button class="btn btn-outline-secondary" type="button" id="togglePw2" aria-label="Show/Hide"><i class="bi bi-eye"></i></button>
-                  <div class="invalid-feedback">Passwords must match.</div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Role <span class="text-danger">*</span></label>
-                <select id="signupRoleSelect" name="role" class="form-select" required>
-                  <option value="" selected disabled>Choose a role…</option>
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="MANAGER">Manager</option>
-                  <option value="HR">HR</option>
-                </select>
-                <div class="invalid-feedback">Please select a role.</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Agreement</label>
-                <div class="form-check">
-                  <input id="agree" class="form-check-input" type="checkbox" required>
-                  <label class="form-check-label" for="agree">
-                    I agree to the <a href="#" class="link-secondary">Terms</a> and <a href="#" class="link-secondary">Privacy Policy</a>.
-                  </label>
-                  <div class="invalid-feedback">You must accept the terms to continue.</div>
-                </div>
-              </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" required autocomplete="email">
+              <div class="invalid-feedback">Valid email is required.</div>
             </div>
-            <hr class="my-4">
-            <h6 class="mb-3"><i class="bi bi-card-checklist me-1"></i> Employee Details</h6>
-            <div id="employeeFields" class="row g-3 d-none">
-              <div class="col-md-6">
-                <label class="form-label">Full Name</label>
-                <div class="input-group"><span class="input-group-text"><i class="bi bi-person-vcard"></i></span><input name="name" type="text" class="form-control" placeholder="e.g. Jane Doe"></div>
+
+            <div class="col-md-6">
+              <label class="form-label">Password</label>
+              <div class="input-group">
+                <input id="pw1" type="password" name="password" class="form-control" required autocomplete="new-password" minlength="12">
+                <button id="togglePw1" class="btn btn-outline-secondary" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Employee ID</label>
-                <div class="input-group"><span class="input-group-text"><i class="bi bi-hash"></i></span><input name="employee_id" type="text" class="form-control" placeholder="e.g. EMP-00123"></div>
+              <div class="progress mt-2" style="height:6px;">
+                <div id="pwStrength" class="progress-bar" style="width:0%"></div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Department</label>
-                <div class="input-group"><span class="input-group-text"><i class="bi bi-building"></i></span><input name="department" type="text" class="form-control" placeholder="e.g. Engineering"></div>
+              <small id="pwHint" class="text-muted">Use 12+ chars with upper, lower, number, symbol.</small>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Confirm Password</label>
+              <div class="input-group">
+                <input id="pw2" name="confirm_password" type="password" class="form-control" required autocomplete="new-password" minlength="12">
+
+                <button id="togglePw2" class="btn btn-outline-secondary" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Job Title</label>
-                <div class="input-group"><span class="input-group-text"><i class="bi bi-briefcase"></i></span><input name="title" type="text" class="form-control" placeholder="e.g. Software Engineer"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Manager</label>
-                <div class="input-group"><span class="input-group-text"><i class="bi bi-person-gear"></i></span><input name="manager_name" type="text" class="form-control" placeholder="e.g. Alex Smith"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Phone</label>
-                <div class="input-group"><span class="input-group-text"><i class="bi bi-telephone"></i></span><input name="phone" type="text" class="form-control" placeholder="e.g. +1 555 555 5555"></div>
-              </div>
-              <div class="col-md-12">
-                <label class="form-label">Location</label>
-                <div class="input-group"><span class="input-group-text"><i class="bi bi-geo-alt"></i></span><input name="location" type="text" class="form-control" placeholder="e.g. New York, NY"></div>
+              <div class="invalid-feedback">Passwords must match.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Role</label>
+              <select id="signupRoleSelect" name="role" class="form-select" required>
+                <option value="" disabled selected>Choose…</option>
+                <option value="EMPLOYEE">Employee</option>
+                <option value="MANAGER">Manager</option>
+                <option value="HR">HR</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+              <div class="invalid-feedback">Please pick a role.</div>
+            </div>
+          </div>
+
+          <!-- Employee-only details (auto-requires when role=EMPLOYEE) -->
+          <div id="employeeFields" class="mt-3 d-none">
+            <div class="border rounded p-3">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" name="name" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Employee ID</label>
+                  <input type="text" name="employee_id" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Department</label>
+                  <input type="text" name="department" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Job Title</label>
+                  <input type="text" name="title" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Manager Name</label>
+                  <input type="text" name="manager_name" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Phone</label>
+                  <input type="text" name="phone" class="form-control">
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Location</label>
+                  <input type="text" name="location" class="form-control" placeholder="City, Country">
+                </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer d-flex justify-content-between">
-            <div class="text-muted small"><i class="bi bi-shield-check me-1"></i>New accounts are created as <strong>Pending</strong> until approved by an Admin.</div>
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button id="signupSubmit" type="submit" class="btn btn-primary"><i class="bi bi-person-check"></i> Create Account</button>
-            </div>
+
+          <div class="form-check mt-3">
+            <input id="agree" class="form-check-input" type="checkbox" required>
+            <label class="form-check-label" for="agree">I agree to the Terms & Privacy Policy</label>
+            <div class="invalid-feedback">You must agree before submitting.</div>
+          </div>
+
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary w-100">Create Account</button>
+            <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Cancel</button>
+          </div>
+
+          <!-- Optional demo fillers hook your JS already supports -->
+          <div id="demoFillers" class="mt-3 d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" data-fill="employee">Demo: Employee</button>
+            <button type="button" class="btn btn-sm btn-outline-success" data-fill="manager">Demo: Manager</button>
+            <button type="button" class="btn btn-sm btn-outline-info" data-fill="hr">Demo: HR</button>
           </div>
         </form>
       </div>
     </div>
   </div>
+</div>
+
 
   <footer>
     <small>&copy; 2025 Employee Attrition Prediction. All rights reserved.</small>
   </footer>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // Role presets for login modal
@@ -436,6 +343,7 @@
       HR:      { title:"HR Login",       header:"bg-info",    btn:"btn-info",    icon:'<i class="bi bi-person-lines-fill"></i>' },
       ADMIN:   { title:"Admin Login",    header:"bg-dark",    btn:"btn-dark",    icon:'<i class="bi bi-gear"></i>' },
     };
+
     function applyRole(role){
       const preset = rolePresets[role] || rolePresets.EMPLOYEE;
       document.getElementById('expected_role').value = role;
@@ -445,12 +353,29 @@
       header.className = 'modal-header text-white ' + preset.header;
       const btn = document.getElementById('loginSubmitBtn');
       btn.className = 'btn w-100 ' + preset.btn;
+      // remember last chosen role for reliability
+      sessionStorage.setItem('lastRole', role);
     }
+
+    // When you click a portal button, set role immediately
     document.querySelectorAll('[data-role]').forEach(btn => {
-      btn.addEventListener('click', () => applyRole(btn.getAttribute('data-role')));
+      btn.addEventListener('click', (e) => {
+        const r = btn.getAttribute('data-role') || 'EMPLOYEE';
+        applyRole(r);
+      });
     });
 
-    // Sign-up helpers
+    // When modal is about to show (e.g., opened via ?open=login_admin),
+    // pick role from the button that triggered it or from sessionStorage fallback.
+    document.getElementById('loginModal')?.addEventListener('show.bs.modal', (ev) => {
+      const r = ev.relatedTarget?.getAttribute?.('data-role')
+             || (new URLSearchParams(location.search).get('open') || '').split('_')[1]?.toUpperCase()
+             || sessionStorage.getItem('lastRole')
+             || 'EMPLOYEE';
+      applyRole(r);
+    });
+
+    // ---------- Sign-up helpers (unchanged) ----------
     (function(){
       const form = document.querySelector('#signupModal form.needs-validation');
       const pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
@@ -493,7 +418,7 @@
       });
     })();
 
-    // Demo autofill for sign-up
+    // ---------- Demo autofill (unchanged) ----------
     (function(){
       const samples = {
         employee: { username:"evelyn.park", email:"evelyn.park@acme.com", password:"EPark#2025!", role:"EMPLOYEE", agree:true,
@@ -520,7 +445,7 @@
       document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>btn.addEventListener('click',()=>fillSample(btn.dataset.fill)));
     })();
 
-    // Auto-open modals via ?open=... (one-time; won't re-open on refresh)
+    // ---------- Auto-open via ?open=... ----------
     (function () {
       const params = new URLSearchParams(location.search);
       const open = params.get('open');
@@ -538,12 +463,11 @@
       } else if (open.startsWith('login')) {
         const parts = open.split('_');
         const role = (parts[1] || '').toUpperCase();
-        if (role) applyRole(role);
+        if (role) sessionStorage.setItem('lastRole', role);
         modal('loginModal').show();
       }
       history.replaceState(null, '', location.pathname + (location.hash || ''));
     })();
-
   </script>
 </body>
 </html>

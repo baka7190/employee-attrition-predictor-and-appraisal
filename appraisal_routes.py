@@ -378,9 +378,9 @@ def employee_new_appraisal():
         # Save workload split
         db.session.add(Workload(
             appraisal_id=appraisal.id,
-            teaching_percent=form.teaching_percent.data or 0,
-            research_percent=form.research_percent.data or 0,
-            other_percent=form.other_percent.data or 0,
+            teaching_percent=float(form.teaching_percent.data or 0),
+            research_percent=float(form.research_percent.data or 0),
+            other_percent=float(form.other_percent.data or 0),
         ))
 
         # Save employee examples (ratings temp = 3)

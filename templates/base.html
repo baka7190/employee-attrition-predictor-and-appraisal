@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Employee Attrition & Appraisal System{% endblock %}</title>
+
+  <!-- Per-page extra head (styles, meta, etc.) -->
+  {% block head_extra %}{% endblock %}
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,8 +17,6 @@
   <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
-  {% block head_extra %}{% endblock %}
 
   <style>
   :root{
@@ -70,7 +72,7 @@
 
 <body class="d-flex flex-column">
   {% set logo_url = url_for('static', filename='images/epas-logo.png') %}
-  <a class="skip-link" href="#main-content">Skip to content</a>
+  <!--<a class="skip-link" href="#main-content">Skip to content</a>-->
 
   <!-- Utility strip -->
   <div class="utilbar">
@@ -351,6 +353,7 @@
 
   <!-- Bootstrap -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
     // Elevation on scroll + back-to-top
     const appbar=document.querySelector('.appbar'), backTop=document.querySelector('.back-to-top');
@@ -426,7 +429,7 @@
       });
     })();
 
-    /* === Demo autofill buttons (Employee, Manager, HR) === */
+    /* === Demo autofill buttons (Employee, Manager, HR) — fixed === */
     (function(){
       const samples = {
         employee: {
@@ -457,28 +460,66 @@
         }
       };
 
-      const $form   = document.querySelector('#signupModal form.needs-validation');
+      const $form = document.querySelector('#signupModal form.needs-validation');
       if (!$form) return;
 
-      const $user   = $form.querySelector('[name="username"]');
-      const $email  = $form.querySelector('[name="email"]');
-      const $pw1    = $form.querySelector('#pw1');
-      const $pw2    = $form.querySelector('#pw2');
-      const $role   = $form.querySelector('#signupRoleSelect');
-      const $agree  = $form.querySelector('#agree');
+      const $user  = $form.querySelector('[name="username"]');
+      const $email = $form.querySelector('[name="email"]');
+      const $pw1   = $form.querySelector('#pw1');
+      const $pw2   = $form.querySelector('#pw2');
+      const $role  = $form.querySelector('#signupRoleSelect');
+      const $agree = $form.querySelector('#agree');
 
       function setVal(el, v){
         if(!el) return;
         el.value = v;
         el.dispatchEvent(new Event('input', { bubbles:true }));
       }
-      function setChange(el){
-        if(!el) return;
-        el.dispatchEvent(new Event('change', { bubbles:true }));
-      }
+      function setChecked(el, v){ if(el) el.checked = !!v; }
+      function setChange(el){ if(el) el.dispatchEvent(new Event('change', { bubbles:true })); }
+
       function fillDetails(d){
         if(!d) return;
         ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{
           const el = $form.querySelector(`[name="${n}"]`);
-          if (el &&
+          if (el) setVal(el, d[n] ?? '');
+        });
+      }
+
+      function fill(sample){
+        if(!sample) return;
+        setVal($user, sample.username);
+        setVal($email, sample.email);
+        setVal($pw1, sample.password);
+        setVal($pw2, sample.password);
+        if ($role) { $role.value = sample.role; setChange($role); }
+        setChecked($agree, sample.agree);
+        fillDetails(sample.details);
+      }
+
+      document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>{
+        btn.addEventListener('click', ()=> fill(samples[btn.dataset.fill]));
+      });
+    })();
+  </script>
+
+  <!-- Page-specific scripts (e.g., predict_form’s handlers) -->
+  {% block scripts_extra %}{% endblock %}
+<script>
+  // Attach CSRF header to all fetch POST/PUT/PATCH/DELETE automatically
+  (function(){
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!window.fetch || !CSRF) return;
+    const origFetch = window.fetch;
+    window.fetch = (input, init={})=>{
+      const method = (init.method||'GET').toUpperCase();
+      if (['POST','PUT','PATCH','DELETE'].includes(method)) {
+        init.headers = Object.assign({}, init.headers, {'X-CSRFToken': CSRF});
+      }
+      return origFetch(input, init);
+    };
+  })();
 </script>
+
+</body>
+</html>

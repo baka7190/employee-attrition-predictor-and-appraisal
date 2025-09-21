@@ -4,9 +4,17 @@
 {% block head_extra %}
 <style>
   :root{
-    --bg:#F7F9FC; --card:#FFF; --ink:#0F172A; --muted:#6B7280; --line:#E6EAF2;
-    --primary:#2563EB; --success:#16A34A; --danger:#EF4444;
-    --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.06); --rail-top:80px;
+    --bg:#F7F9FC;
+    --card:#FFF;
+    --ink:#0F172A;
+    --muted:#6B7280;
+    --line:#E6EAF2;
+    --primary:#2563EB;
+    --success:#16A34A;
+    --danger:#EF4444;
+    --radius:16px;
+    --shadow:0 10px 30px rgba(2,6,23,.06);
+    --rail-top:80px;
   }
 
   body{background:var(--bg);color:var(--ink);}
@@ -17,6 +25,7 @@
   .btn-quiet{--bs-btn-color:var(--muted);--bs-btn-border-color:var(--line);--bs-btn-hover-bg:rgba(2,6,23,.04);border-radius:999px}
 
   .chip{border-radius:999px}
+  .muted{color:var(--muted)}
   .small-muted{font-size:.85rem;color:var(--muted)}
 
   .card{border:0;border-radius:var(--radius);box-shadow:var(--shadow);background:var(--card)}
@@ -30,8 +39,10 @@
   .section-toggle .chev{transition:transform .2s ease}
   .section-toggle[aria-expanded="false"] .chev{transform:rotate(-90deg)}
 
-  .form-floating>.form-control, .form-floating>.form-select{border-radius:.75rem;border-color:#e5e7eb}
-  .form-floating>.form-control:focus, .form-floating>.form-select:focus{border-color:#cdd6f6;box-shadow:0 0 0 .2rem rgba(37,99,235,.15)}
+  .form-floating>.form-control,
+  .form-floating>.form-select{border-radius:.75rem;border-color:#e5e7eb}
+  .form-floating>.form-control:focus,
+  .form-floating>.form-select:focus{border-color:#cdd6f6;box-shadow:0 0 0 .2rem rgba(37,99,235,.15)}
   .help{font-size:.8rem;color:var(--muted)}
 
   .sticky-rail{position:sticky;top:var(--rail-top)}
@@ -40,23 +51,35 @@
 
   .sticky-actions{position:sticky;bottom:0;z-index:3;background:var(--card);border-top:1px solid var(--line);border-radius:0 0 var(--radius) var(--radius);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between}
   .sticky-actions .btn{border-radius:999px}
-  @media (max-width: 767.98px){ .sticky-actions{display:none} }
+  @media (max-width: 767.98px){
+    .sticky-actions{display:none}
+  }
 
   .mobile-cta{position:fixed;inset:auto 0 0 0;background:var(--card);border-top:1px solid var(--line);padding:.75rem .75rem;z-index:1040;box-shadow:0 -10px 30px rgba(2,6,23,.06)}
   .mobile-cta .btn{width:100%;border-radius:999px}
-  @media (min-width: 768px){ .mobile-cta{display:none} }
+  @media (min-width: 768px){
+    .mobile-cta{display:none}
+  }
 
   .reveal{opacity:0;transform:translateY(12px);transition:opacity .4s ease, transform .4s ease}
   .reveal.visible{opacity:1;transform:none}
-  @media (prefers-reduced-motion: reduce){ .reveal{opacity:1;transform:none;transition:none} .section-toggle .chev{transition:none} }
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .section-toggle .chev{transition:none}
+  }
 
   .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:#f3f4f6;border:1px solid #e5e7eb;border-bottom-width:2px;border-radius:6px;padding:.05rem .35rem;font-size:.8rem}
 
+  /* Ensure form elements are consistently sized */
   .grid-cols{row-gap:1rem}
   .grid-cols>[class*="col-"]{display:flex}
   .grid-cols .form-floating{width:100%}
+
+  /* Optional quiet breadcrumb underline on hover */
   .breadcrumbs a{text-decoration:none}
   .breadcrumbs a:hover{text-decoration:underline}
+
+  /* Fine-tune container spacing */
   .container-fluid{padding-inline:1rem}
 </style>
 {% endblock %}
@@ -102,22 +125,15 @@
               <div class="d-flex justify-content-between align-items-start">
                 <div>
                   <div class="section-kicker mb-1">Single Prediction</div>
-                  <div class="small-muted">Enter employee details or click a <span class="kbd">Sample</span> to auto-fill the form.</div>
+                  <div class="small-muted">Enter employee details or click <span class="kbd">Sample</span> to auto-fill common values.</div>
                 </div>
                 <small class="small-muted">All fields are required</small>
               </div>
             </div>
             <div class="card-body">
               <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-outline-primary chip" id="fillSampleLow">
-                  <i class="bi bi-magic me-1"></i> Sample (Low • 90%+)
-                </button>
-                <button type="button" class="btn btn-outline-danger chip" id="fillSampleHigh">
-                  <i class="bi bi-fire me-1"></i> Sample (High)
-                </button>
-                <button type="reset" class="btn btn-outline-secondary chip">
-                  <i class="bi bi-eraser me-1"></i> Clear
-                </button>
+                <button type="button" class="btn btn-outline-primary chip" id="fillSample"><i class="bi bi-magic me-1"></i> Sample</button>
+                <button type="reset" class="btn btn-outline-secondary chip"><i class="bi bi-eraser me-1"></i> Clear</button>
               </div>
             </div>
           </div>
@@ -143,33 +159,44 @@
                       <label>Age</label>
                     </div>
                   </div>
+
                   <div class="col-md-4">
                     <div class="form-floating">
                       <select class="form-select" name="Gender" required>
-                        <option>Male</option><option>Female</option>
+                        <option>Male</option>
+                        <option>Female</option>
                       </select>
                       <label>Gender</label>
                     </div>
                   </div>
+
                   <div class="col-md-4">
                     <div class="form-floating">
                       <select class="form-select" name="MaritalStatus" required>
-                        <option>Single</option><option>Married</option><option>Divorced</option>
+                        <option>Single</option>
+                        <option>Married</option>
+                        <option>Divorced</option>
                       </select>
                       <label>Marital Status</label>
                     </div>
                   </div>
+
                   <div class="col-md-6">
                     <div class="form-floating">
                       <input type="number" class="form-control" name="Education" placeholder="Education (1–5)" min="1" max="5" required>
                       <label>Education (1–5)</label>
                     </div>
                   </div>
+
                   <div class="col-md-6">
                     <div class="form-floating">
                       <select class="form-select" name="EducationField" required>
-                        <option>Life Sciences</option><option>Medical</option><option>Marketing</option>
-                        <option>Technical Degree</option><option>Human Resources</option><option>Other</option>
+                        <option>Life Sciences</option>
+                        <option>Medical</option>
+                        <option>Marketing</option>
+                        <option>Technical Degree</option>
+                        <option>Human Resources</option>
+                        <option>Other</option>
                       </select>
                       <label>Education Field</label>
                     </div>
@@ -194,12 +221,47 @@
             <div id="sec-compensation" class="collapse show" data-section="compensation" aria-labelledby="sec-compensation">
               <div class="card-body">
                 <div class="row grid-cols">
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="DailyRate" placeholder="Daily Rate" min="0" required><label>Daily Rate</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="MonthlyIncome" placeholder="Monthly Income" min="0" required><label>Monthly Income</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="MonthlyRate" placeholder="Monthly Rate" min="0" required><label>Monthly Rate</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="PercentSalaryHike" placeholder="Percent Salary Hike" min="0" required><label>Percent Salary Hike</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="StockOptionLevel" placeholder="Stock Option Level (0–3)" min="0" max="3" required><label>Stock Option Level (0–3)</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="HourlyRate" placeholder="Hourly Rate" min="0" required><label>Hourly Rate</label></div></div>
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="DailyRate" placeholder="Daily Rate" min="0" required>
+                      <label>Daily Rate</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="MonthlyIncome" placeholder="Monthly Income" min="0" required>
+                      <label>Monthly Income</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="MonthlyRate" placeholder="Monthly Rate" min="0" required>
+                      <label>Monthly Rate</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="PercentSalaryHike" placeholder="Percent Salary Hike" min="0" required>
+                      <label>Percent Salary Hike</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="StockOptionLevel" placeholder="Stock Option Level (0–3)" min="0" max="3" required>
+                      <label>Stock Option Level (0–3)</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="HourlyRate" placeholder="Hourly Rate" min="0" required>
+                      <label>Hourly Rate</label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -220,12 +282,47 @@
             <div id="sec-tenure" class="collapse show" data-section="tenure" aria-labelledby="sec-tenure">
               <div class="card-body">
                 <div class="row grid-cols">
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="TotalWorkingYears" placeholder="Total Working Years" min="0" required><label>Total Working Years</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="YearsAtCompany" placeholder="Years At Company" min="0" required><label>Years At Company</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="YearsInCurrentRole" placeholder="Years In Current Role" min="0" required><label>Years In Current Role</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="YearsSinceLastPromotion" placeholder="Years Since Last Promotion" min="0" required><label>Years Since Last Promotion</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="YearsWithCurrManager" placeholder="Years With Current Manager" min="0" required><label>Years With Current Manager</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="NumCompaniesWorked" placeholder="Num Companies Worked" min="0" required><label>Num Companies Worked</label></div></div>
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="TotalWorkingYears" placeholder="Total Working Years" min="0" required>
+                      <label>Total Working Years</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="YearsAtCompany" placeholder="Years At Company" min="0" required>
+                      <label>Years At Company</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="YearsInCurrentRole" placeholder="Years In Current Role" min="0" required>
+                      <label>Years In Current Role</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="YearsSinceLastPromotion" placeholder="Years Since Last Promotion" min="0" required>
+                      <label>Years Since Last Promotion</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="YearsWithCurrManager" placeholder="Years With Current Manager" min="0" required>
+                      <label>Years With Current Manager</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="NumCompaniesWorked" placeholder="Num Companies Worked" min="0" required>
+                      <label>Num Companies Worked</label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -249,26 +346,44 @@
                   <div class="col-md-6">
                     <div class="form-floating">
                       <select class="form-select" name="Department" required>
-                        <option>Research & Development</option><option>Sales</option><option>Human Resources</option>
+                        <option>Research & Development</option>
+                        <option>Sales</option>
+                        <option>Human Resources</option>
                       </select>
                       <label>Department</label>
                     </div>
                   </div>
+
                   <div class="col-md-6">
                     <div class="form-floating">
                       <select class="form-select" name="JobRole" required>
-                        <option>Sales Executive</option><option>Research Scientist</option><option>Laboratory Technician</option>
-                        <option>Manufacturing Director</option><option>Healthcare Representative</option><option>Manager</option>
-                        <option>Sales Representative</option><option>Research Director</option><option>Human Resources</option>
+                        <option>Sales Executive</option>
+                        <option>Research Scientist</option>
+                        <option>Laboratory Technician</option>
+                        <option>Manufacturing Director</option>
+                        <option>Healthcare Representative</option>
+                        <option>Manager</option>
+                        <option>Sales Representative</option>
+                        <option>Research Director</option>
+                        <option>Human Resources</option>
                       </select>
                       <label>Job Role</label>
                     </div>
                   </div>
-                  <div class="col-md-6"><div class="form-floating"><input type="number" class="form-control" name="JobLevel" placeholder="Job Level (1–5)" min="1" max="5" required><label>Job Level (1–5)</label></div></div>
+
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="JobLevel" placeholder="Job Level (1–5)" min="1" max="5" required>
+                      <label>Job Level (1–5)</label>
+                    </div>
+                  </div>
+
                   <div class="col-md-6">
                     <div class="form-floating">
                       <select class="form-select" name="BusinessTravel" required>
-                        <option>Travel_Rarely</option><option>Travel_Frequently</option><option>Non-Travel</option>
+                        <option>Travel_Rarely</option>
+                        <option>Travel_Frequently</option>
+                        <option>Non-Travel</option>
                       </select>
                       <label>Business Travel</label>
                     </div>
@@ -293,15 +408,73 @@
             <div id="sec-engagement" class="collapse show" data-section="engagement" aria-labelledby="sec-engagement">
               <div class="card-body">
                 <div class="row grid-cols">
-                  <div class="col-md-4"><div class="form-floating"><select class="form-select" name="OverTime" required><option>No</option><option>Yes</option></select><label>OverTime</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="TrainingTimesLastYear" placeholder="Training Times Last Year" min="0" required><label>Training Times Last Year</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="PerformanceRating" placeholder="Performance Rating (1–4)" min="1" max="4" required><label>Performance Rating (1–4)</label></div></div>
-                  <div class="col-md-3"><div class="form-floating"><input type="number" class="form-control" name="JobInvolvement" placeholder="Job Involvement (1–4)" min="1" max="4" required><label>Job Involvement (1–4)</label></div></div>
-                  <div class="col-md-3"><div class="form-floating"><input type="number" class="form-control" name="JobSatisfaction" placeholder="Job Satisfaction (1–4)" min="1" max="4" required><label>Job Satisfaction (1–4)</label></div></div>
-                  <div class="col-md-3"><div class="form-floating"><input type="number" class="form-control" name="RelationshipSatisfaction" placeholder="Relationship Satisfaction (1–4)" min="1" max="4" required><label>Relationship Satisfaction (1–4)</label></div></div>
-                  <div class="col-md-3"><div class="form-floating"><input type="number" class="form-control" name="EnvironmentSatisfaction" placeholder="Environment Satisfaction (1–4)" min="1" max="4" required><label>Environment Satisfaction (1–4)</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="WorkLifeBalance" placeholder="Work–Life Balance (1–4)" min="1" max="4" required><label>Work–Life Balance (1–4)</label></div></div>
-                  <div class="col-md-4"><div class="form-floating"><input type="number" class="form-control" name="DistanceFromHome" placeholder="Distance From Home" min="0" required><label>Distance From Home</label></div></div>
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <select class="form-select" name="OverTime" required>
+                        <option>No</option>
+                        <option>Yes</option>
+                      </select>
+                      <label>OverTime</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="TrainingTimesLastYear" placeholder="Training Times Last Year" min="0" required>
+                      <label>Training Times Last Year</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="PerformanceRating" placeholder="Performance Rating (1–4)" min="1" max="4" required>
+                      <label>Performance Rating (1–4)</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="JobInvolvement" placeholder="Job Involvement (1–4)" min="1" max="4" required>
+                      <label>Job Involvement (1–4)</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="JobSatisfaction" placeholder="Job Satisfaction (1–4)" min="1" max="4" required>
+                      <label>Job Satisfaction (1–4)</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="RelationshipSatisfaction" placeholder="Relationship Satisfaction (1–4)" min="1" max="4" required>
+                      <label>Relationship Satisfaction (1–4)</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="EnvironmentSatisfaction" placeholder="Environment Satisfaction (1–4)" min="1" max="4" required>
+                      <label>Environment Satisfaction (1–4)</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="WorkLifeBalance" placeholder="Work–Life Balance (1–4)" min="1" max="4" required>
+                      <label>Work–Life Balance (1–4)</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="form-floating">
+                      <input type="number" class="form-control" name="DistanceFromHome" placeholder="Distance From Home" min="0" required>
+                      <label>Distance From Home</label>
+                    </div>
+                  </div>
+
+                  <!-- Spacer to balance grid -->
                   <div class="col-md-4 d-none d-md-block"></div>
                 </div>
               </div>
@@ -318,6 +491,7 @@
                 </button>
               </div>
             </div>
+
           </div>
         </form>
 
@@ -327,8 +501,12 @@
       <!-- Right: Sticky Insights Rail -->
       <div class="col-lg-4">
         <div class="sticky-rail">
+          <!-- Employee Context -->
           <div class="card rail-card mb-3 reveal">
-            <div class="card-header"><div class="eyebrow mb-1">Employee Context</div><h6 class="mb-0">Latest Appraisal &amp; Status</h6></div>
+            <div class="card-header">
+              <div class="eyebrow mb-1">Employee Context</div>
+              <h6 class="mb-0">Latest Appraisal &amp; Status</h6>
+            </div>
             <div class="card-body">
               <div class="d-flex flex-column gap-2 small-muted">
                 <div class="d-flex justify-content-between"><span>Latest score</span><strong class="text-body">–</strong></div>
@@ -339,24 +517,43 @@
             </div>
           </div>
 
+          <!-- Include: Appraisal-aware widget (must remain unchanged) -->
           <div class="card rail-card mb-3 reveal">
-            <div class="card-header"><div class="eyebrow mb-1">Prediction Settings</div><h6 class="mb-0">Use appraisal in prediction</h6></div>
-            <div class="card-body">{% include "_appraisal_predict_widget.html" ignore missing %}</div>
+            <div class="card-header">
+              <div class="eyebrow mb-1">Prediction Settings</div>
+              <h6 class="mb-0">Use appraisal in prediction</h6>
+            </div>
+            <div class="card-body">
+              {% include "_appraisal_predict_widget.html" ignore missing %}
+            </div>
           </div>
 
+          <!-- Recent Appraisals -->
           <div class="card rail-card mb-3 reveal">
-            <div class="card-header"><div class="eyebrow mb-1">History</div><h6 class="mb-0">Recent Appraisals</h6></div>
-            <div class="card-body"><div class="text-center small-muted">No recent appraisals to display.</div></div>
+            <div class="card-header">
+              <div class="eyebrow mb-1">History</div>
+              <h6 class="mb-0">Recent Appraisals</h6>
+            </div>
+            <div class="card-body">
+              <div class="text-center small-muted">No recent appraisals to display.</div>
+            </div>
           </div>
 
+          <!-- What drives risk -->
           <div class="card rail-card mb-3 reveal">
-            <div class="card-header"><div class="eyebrow mb-1">Analytics</div><h6 class="mb-0">What drives risk</h6></div>
-            <div class="card-body"><div class="small-muted">This placeholder illustrates factors such as <em>OverTime</em>, <em>Job Satisfaction</em>, <em>Years Since Last Promotion</em>, etc. (presentational only).</div></div>
+            <div class="card-header">
+              <div class="eyebrow mb-1">Analytics</div>
+              <h6 class="mb-0">What drives risk</h6>
+            </div>
+            <div class="card-body">
+              <div class="small-muted">This placeholder illustrates factors such as <em>OverTime</em>, <em>Job Satisfaction</em>, <em>Years Since Last Promotion</em>, etc. (presentational only).</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Mobile sticky CTA -->
     <div class="mobile-cta d-md-none">
       <button class="btn btn-primary" id="mobilePredict"><i class="bi bi-lightning-charge me-1"></i> Review &amp; Predict</button>
     </div>
@@ -367,100 +564,85 @@
 {% block scripts_extra %}
 <script>
   (function () {
-    // Reveal on scroll
+    // ===== Reveal on scroll (respects reduced motion) =====
     const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!prefersReduced && 'IntersectionObserver' in window) {
-      const io = new IntersectionObserver((entries)=>{ entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target);} }); }, {threshold:.1});
+      const io = new IntersectionObserver((entries)=> {
+        entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target);} });
+      }, {threshold: .1});
       document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-    } else { document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible')); }
+    } else {
+      document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'));
+    }
 
-    // Persist collapse state
+    // ===== Collapsible section state with localStorage =====
     const stateKey = (k)=>`eap:pred:section:${k}`;
     document.querySelectorAll('.section-card').forEach(card=>{
       const key = card.getAttribute('data-section-key');
       const body = card.querySelector('.collapse');
       const toggle = card.querySelector('.section-toggle');
+
+      // Restore state
       const saved = localStorage.getItem(stateKey(key));
-      if (saved === '0') { body.classList.remove('show'); toggle.setAttribute('aria-expanded','false'); }
+      if (saved === '0') {
+        body.classList.remove('show');
+        toggle.setAttribute('aria-expanded','false');
+      }
+
+      // Persist on Bootstrap collapse events if available; fallback to manual
       const onShown = ()=>{ localStorage.setItem(stateKey(key),'1'); toggle.setAttribute('aria-expanded','true'); };
       const onHidden = ()=>{ localStorage.setItem(stateKey(key),'0'); toggle.setAttribute('aria-expanded','false'); };
+
       if (window.bootstrap && bootstrap.Collapse) {
         body.addEventListener('shown.bs.collapse', onShown);
         body.addEventListener('hidden.bs.collapse', onHidden);
       } else {
-        toggle.addEventListener('click', ()=>{ const isOpen = body.classList.toggle('show'); (isOpen ? onShown : onHidden)(); });
+        toggle.addEventListener('click', ()=>{
+          const isOpen = body.classList.toggle('show');
+          (isOpen ? onShown : onHidden)();
+        });
       }
     });
 
+    // ===== Mobile CTA mirrors desktop Predict =====
+    const mobileBtn = document.getElementById('mobilePredict');
+    if (mobileBtn) {
+      mobileBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        const desktopBtn = document.getElementById('predictBtn');
+        if (desktopBtn) desktopBtn.click();
+      });
+    }
+
+    // ===== Normal form POST (no AJAX) =====
     const form = document.getElementById('predictForm');
-    const predictBtn = document.getElementById('predictBtn');
-    document.getElementById('mobilePredict')?.addEventListener('click',(e)=>{ e.preventDefault(); predictBtn?.click(); });
-    predictBtn.addEventListener('click',(e)=>{ if(e.defaultPrevented) form.submit(); });
+    const btn  = document.getElementById('predictBtn');
 
-    const setVal = (n,v)=>{ const el=form.elements[n]; if(el){ el.value=v; } };
-
-    // LOW attrition sample — tuned for very high model confidence (~90%+)
-    document.getElementById('fillSampleLow').addEventListener('click', function () {
-      const d = {
-        // Demographics & context: senior, stable, highly educated
-        Age: 46,
-        Gender: 'Male',
-        MaritalStatus: 'Married',
-        Education: 5,
-        EducationField: 'Life Sciences',
-
-        // Compensation: strong pay & equity, recent raise
-        DailyRate: 950,
-        MonthlyIncome: 9500,
-        MonthlyRate: 20000,
-        PercentSalaryHike: 18,
-        StockOptionLevel: 3,
-        HourlyRate: 90,
-
-        // Tenure: long tenure, recent promotion, steady manager
-        TotalWorkingYears: 20,
-        YearsAtCompany: 12,
-        YearsInCurrentRole: 5,
-        YearsSinceLastPromotion: 0,
-        YearsWithCurrManager: 6,
-        NumCompaniesWorked: 1,
-
-        // Role: R&D, minimal travel, mid level
-        Department: 'Research & Development',
-        JobRole: 'Research Scientist',
-        JobLevel: 3,
-        BusinessTravel: 'Non-Travel',
-
-        // Engagement: very positive, no overtime
-        OverTime: 'No',
-        TrainingTimesLastYear: 5,
-        PerformanceRating: 4,
-        JobInvolvement: 4,
-        JobSatisfaction: 4,
-        RelationshipSatisfaction: 4,
-        EnvironmentSatisfaction: 4,
-        WorkLifeBalance: 4,
-
-        // Logistics
-        DistanceFromHome: 1
-      };
-      Object.entries(d).forEach(([k,v])=>setVal(k,v));
+    // Keep this: if some other script prevents default, force a real submit
+    btn.addEventListener('click', function (e) {
+      if (e.defaultPrevented) form.submit();
     });
 
-    // HIGH attrition sample (unchanged): young, low satisfaction, long commute, OT, frequent travel
-    document.getElementById('fillSampleHigh').addEventListener('click', function () {
-      const d = {
-        Age:24, Gender:'Female', MaritalStatus:'Single', Education:1, EducationField:'Other',
-        DailyRate:220, MonthlyIncome:2500, MonthlyRate:4000, PercentSalaryHike:2, StockOptionLevel:0, HourlyRate:30,
-        TotalWorkingYears:2, YearsAtCompany:1, YearsInCurrentRole:1, YearsSinceLastPromotion:6, YearsWithCurrManager:0, NumCompaniesWorked:5,
-        Department:'Sales', JobRole:'Sales Representative', JobLevel:1, BusinessTravel:'Travel_Frequently',
-        OverTime:'Yes', TrainingTimesLastYear:0, PerformanceRating:2, JobInvolvement:1, JobSatisfaction:1,
-        RelationshipSatisfaction:1, EnvironmentSatisfaction:1, WorkLifeBalance:1, DistanceFromHome:30
-      };
-      Object.entries(d).forEach(([k,v])=>setVal(k,v));
+    // Optional debug log
+    form.addEventListener('submit', function () {
+      console.log('Submitting /predict (server-rendered result page)…');
     });
 
-    form.addEventListener('submit', ()=>{ console.log('Submitting /predict …'); });
+    // Sample autofill (unchanged)
+    document.getElementById('fillSample').addEventListener('click', function () {
+      const set = (n,v)=>{const el=form.elements[n]; if(el) el.value=v;};
+      const defaults = {
+        Age: 36, DailyRate: 800, DistanceFromHome: 5, Education: 3, EnvironmentSatisfaction: 3,
+        HourlyRate: 65, JobInvolvement: 3, JobLevel: 2, JobSatisfaction: 3, MonthlyIncome: 6500,
+        MonthlyRate: 14000, NumCompaniesWorked: 2, PercentSalaryHike: 12, PerformanceRating: 3,
+        RelationshipSatisfaction: 3, StockOptionLevel: 1, TotalWorkingYears: 10,
+        TrainingTimesLastYear: 3, WorkLifeBalance: 3, YearsAtCompany: 5, YearsInCurrentRole: 3,
+        YearsSinceLastPromotion: 1, YearsWithCurrManager: 3,
+        JobRole: 'Sales Executive', Department: 'Sales', MaritalStatus: 'Married',
+        Gender: 'Male', OverTime: 'No', BusinessTravel: 'Travel_Rarely', EducationField: 'Life Sciences'
+      };
+      Object.entries(defaults).forEach(([k,v])=>set(k,v));
+    });
   })();
 </script>
 {% endblock %}

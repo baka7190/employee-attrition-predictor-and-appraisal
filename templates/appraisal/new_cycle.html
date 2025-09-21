@@ -32,7 +32,10 @@
       {% endif %}
     {% endwith %}
 
-    <form method="post" id="cycleForm" novalidate>
+    <!-- IMPORTANT: single form, post back to the same endpoint -->
+    <form method="POST" action="{{ url_for('appraisal.new_cycle') }}" id="cycleForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
       <!-- Cycle Details -->
       <div class="card mb-3">
         <div class="card-body">

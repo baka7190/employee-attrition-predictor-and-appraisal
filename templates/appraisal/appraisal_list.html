@@ -67,8 +67,9 @@
                       action="{{ url_for('appraisal.delete_appraisal', appraisal_id=a.id) }}"
                       class="d-inline ms-1"
                       onsubmit="return confirm('Delete appraisal #{{ a.id }}? This cannot be undone.');">
-                  {# If you use CSRF protection, include token: #}
-                  {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
                   <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                 </form>
                 {% endif %}

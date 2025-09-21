@@ -118,11 +118,22 @@
                 <a href="{{ url_for('appraisal.hr_review_detail', appraisal_id=a.id) }}" class="btn btn-primary">
                   <i class="bi bi-box-arrow-up-right"></i> Open
                 </a>
-                <form method="POST" action="{{ url_for('appraisal.hr_approve', appraisal_id=a.id) }}">
-                  <button class="btn btn-success"><i class="bi bi-check2-circle"></i> Approve</button>
+                <!-- FIXED: include CSRF and keep forms inline -->
+                <form method="POST"
+                      action="{{ url_for('appraisal.hr_approve', appraisal_id=a.id) }}"
+                      class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check2-circle"></i> Approve
+                  </button>
                 </form>
-                <form method="POST" action="{{ url_for('appraisal.hr_reject', appraisal_id=a.id) }}">
-                  <button class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> Reject</button>
+                <form method="POST"
+                      action="{{ url_for('appraisal.hr_reject', appraisal_id=a.id) }}"
+                      class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger">
+                    <i class="bi bi-x-circle"></i> Reject
+                  </button>
                 </form>
               </div>
             </td>

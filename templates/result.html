@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block head %}
+{% block head_extra %}
 <style>
   body { background: #f9fafb; }
   .page-full { width: 100%; padding: 0 1rem; }
@@ -123,7 +123,9 @@
         <h5 class="modal-title"><i class="bi bi-people"></i> Retention Plan</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form method="POST" action="{{ url_for('save_retention_plan') }}">
+      <!-- Use safe_url_for to avoid BuildError if the route doesn't exist yet -->
+      <form method="POST" action="{{ safe_url_for('save_retention_plan') or '#' }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
           <input type="hidden" name="user_id" value="{{ current_user.id }}">
           <div class="mb-3">

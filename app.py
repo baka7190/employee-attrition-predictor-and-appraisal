@@ -88,16 +88,93 @@ def _verify_password(stored_hash_or_plain: str, provided: str) -> bool:
     # Fallback: legacy plaintext compare
     return stored_hash_or_plain == provided
 
+
+from sqlalchemy import or_
+
+def _purge_user_relations(user_id: int):
+    """
+    Hard-delete all rows that reference the given user to allow a real user delete.
+    Returns a dict of counts for messaging.
+    """
+    counts = {"predictions": 0, "appraisals": 0, "enrollments": 0, "perf_reviews": 0, "retention_plans": 0}
+
+    # Predictions created by the user
+    try:
+        counts["predictions"] = Prediction.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+    except Exception:
+        db.session.rollback()
+
+    # Appraisals where the user is employee OR supervisor
+    try:
+        counts["appraisals"] = (
+            Appraisal.query
+            .filter(or_(Appraisal.employee_id == user_id, Appraisal.supervisor_id == user_id))
+            .delete(synchronize_session=False)
+        )
+    except Exception:
+        db.session.rollback()
+
+    # Cycle enrollments where user is employee OR manager
+    try:
+        counts["enrollments"] = (
+            CycleEnrollment.query
+            .filter(or_(CycleEnrollment.employee_id == user_id, CycleEnrollment.manager_id == user_id))
+            .delete(synchronize_session=False)
+        )
+    except Exception:
+        db.session.rollback()
+
+    # Performance reviews (only if your model has these columns)
+    try:
+        cols = PerformanceReview.__table__.c.keys()
+        conds = []
+        if "employee_id" in cols:
+            conds.append(PerformanceReview.employee_id == user_id)
+        if "reviewer_id" in cols:
+            conds.append(PerformanceReview.reviewer_id == user_id)
+        if conds:
+            counts["perf_reviews"] = PerformanceReview.query.filter(or_(*conds)).delete(synchronize_session=False)
+    except Exception:
+        db.session.rollback()
+
+    # Retention plans (best-effort: check common columns)
+    try:
+        cols = RetentionPlan.__table__.c.keys()
+        conds = []
+        if "user_id" in cols:
+            conds.append(RetentionPlan.user_id == user_id)
+        if "employee_id" in cols:
+            conds.append(RetentionPlan.employee_id == user_id)
+        if "created_by" in cols:
+            conds.append(RetentionPlan.created_by == user_id)
+        if conds:
+            counts["retention_plans"] = RetentionPlan.query.filter(or_(*conds)).delete(synchronize_session=False)
+    except Exception:
+        db.session.rollback()
+
+    return counts
+
+
 # ---------------- App / Config ----------------
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-12345')
 
 db_url = os.getenv("DATABASE_URL", "sqlite:///app.db")
+
+# Heroku/Railway sometimes give "postgres://"
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+# Force SSL for managed Postgres (Railway usually requires it)
+if db_url.startswith("postgresql://") and "sslmode" not in db_url:
+    sep = "&" if "?" in db_url else "?"
+    db_url = f"{db_url}{sep}sslmode=require"
+
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# Nice-to-haves for cloud DBs
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {"pool_pre_ping": True})
 
 csrf = CSRFProtect(app)
 
@@ -142,39 +219,53 @@ if os.getenv("AUTO_CREATE_DB", "1") == "1":
     with app.app_context():
         db.create_all()
 
+
+# app.py (or your routes file)
+from flask import request, redirect, url_for, flash
+from werkzeug.security import generate_password_hash
+from sqlalchemy import or_
+
+ALLOWED_ROLES = {"EMPLOYEE", "MANAGER", "HR", "ADMIN"}
+
+@app.post("/signup")
+def signup():
+    # Forward old /signup posts to the canonical /register handler
+    return redirect(url_for("register"))
+
+
+
 # ---------------- Admin bootstrap ----------------
 def bootstrap_admin():
-    """
-    Ensure a known-good admin account exists and is usable.
-    You can override defaults via environment variables:
-      BOOTSTRAP_ADMIN_EMAIL=admin@local
-      BOOTSTRAP_ADMIN_USERNAME=admin
-      BOOTSTRAP_ADMIN_PASSWORD=Admin#12345
-    """
     try:
         email    = os.getenv("BOOTSTRAP_ADMIN_EMAIL", "admin@local")
         username = os.getenv("BOOTSTRAP_ADMIN_USERNAME", "admin")
         password = os.getenv("BOOTSTRAP_ADMIN_PASSWORD", "Admin#12345")
+        force    = os.getenv("BOOTSTRAP_RESET_ADMIN_PASSWORD", "0") == "1"
 
-        # Try to find by username OR email (case-insensitive)
         u = (User.query.filter(func.lower(User.username) == username.lower()).first()
              or User.query.filter(func.lower(User.email) == email.lower()).first())
 
-        # Create if missing
         if not u:
             u = User(username=username, email=email, role=Role.ADMIN, is_active=True)
             db.session.add(u)
 
-        # Always enforce role, active flag, and password (idempotent “upsert”)
-        u.role      = Role.ADMIN
+        # Always enforce role/active
+        u.role = Role.ADMIN
         u.is_active = True
-        u.password  = generate_password_hash(password)
+
+        # Only set password when creating, when empty, or when explicitly forced
+        if not u.password or force:
+            u.password = generate_password_hash(password)
 
         db.session.commit()
-        app.logger.warning("✅ Admin ensured: %s <%s>", username, email)
+        app.logger.warning("✅ Admin ensured: %s <%s>", username, u.email)
     except Exception as e:
         db.session.rollback()
         app.logger.error("bootstrap_admin failed: %s", e)
+
+
+
+
 
 with app.app_context():
     bootstrap_admin()
@@ -183,6 +274,53 @@ with app.app_context():
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+
+# add near your other HR exports
+from flask import send_file
+import io
+
+
+from functools import wraps
+
+def roles_required(*allowed_roles):
+    """
+    Usage: @roles_required("HR") or @roles_required("HR", "ADMIN")
+    Ensures the current user has one of the allowed roles.
+    """
+    # Normalize the role strings once
+    normalized = {(_role_to_string(r) or "").strip().upper() for r in allowed_roles}
+
+    def decorator(fn):
+        @wraps(fn)
+        @login_required
+        def wrapper(*args, **kwargs):
+            role = get_role(current_user)
+            if role in normalized:
+                return fn(*args, **kwargs)
+            flash("Access denied.", "danger")
+            # Send them to the closest matching login modal
+            target = (next(iter(normalized)) or "EMPLOYEE").lower()
+            return redirect(url_for("home", open=f"login_{target}"))
+        return wrapper
+    return decorator
+
+
+
+@app.route("/hr/export/pdf")
+@login_required
+@roles_required("HR")   # or whatever decorator you use
+def hr_export_pdf():
+    # TODO: replace with real PDF generation
+    buf = io.BytesIO()
+    buf.write(b"%PDF-1.4\n% Fake minimal PDF ...\n")  # placeholder
+    buf.seek(0)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="hr_report.pdf",
+        mimetype="application/pdf"
+    )
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -387,9 +525,10 @@ def register():
     if not username or not email or not role_str:
         flash('Please fill all required fields.', 'danger')
         return redirect(url_for('home', open='signup'))
-    if len(raw_pw) < 8:
-        flash('Password must be at least 8 characters.', 'danger')
+    if len(raw_pw) < 12:
+        flash('Password must be at least 12 characters.', 'danger')
         return redirect(url_for('home', open='signup'))
+
     if raw_pw != confirm:
         flash('Passwords do not match.', 'danger')
         return redirect(url_for('home', open='signup'))
@@ -455,6 +594,22 @@ def register():
         else: msg = 'Registration failed.'
         flash(msg, 'danger')
         return redirect(url_for('home', open='signup'))
+
+
+@app.teardown_request
+def _teardown_request(exc):
+    # If the request raised, roll back so the connection isn't left aborted
+    if exc is not None:
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+    # Always remove the scoped session at the end of the request
+    try:
+        db.session.remove()
+    except Exception:
+        pass
+
 
 # ----- Account/Profile -----
 @account_bp.post('/profile/update')
@@ -951,87 +1106,162 @@ def inject_notifications():
             db.session.rollback()
     return dict(notif_count=count, notif_items=items)
 
+
+# ----- Predict -----
 # ----- Predict -----
 @app.route('/predict', methods=['GET', 'POST'])
 @login_required
 @csrf.exempt
 def predict():
+    # GET -> show the form
     if request.method == 'GET':
-        # Render form if present; else a friendly message
         try:
             return render_template('predict_form.html')
         except Exception:
-            return render_template_string("<p style='padding:20px;font-family:system-ui'>Upload/train a model first.</p>")
+            return render_template_string(
+                "<p style='padding:20px;font-family:system-ui'>Upload/train a model first.</p>"
+            )
+
+    # POST -> run prediction
+    # treat as ajax only if explicitly asked for JSON
+    wants_json = (request.headers.get('X-Requested-With') == 'XMLHttpRequest')
+
+    # Force HTML for classic form posts (prevents accidental JSON if a header sneaks in)
+    is_form_post = request.mimetype in ("application/x-www-form-urlencoded", "multipart/form-data", None)
+    if is_form_post:
+        wants_json = False
 
     if model is None or encoder is None:
+        if wants_json:
+            return jsonify(
+                ok=False,
+                error="MODEL_UNAVAILABLE",
+                message="Prediction model not available yet. Ask an admin to (re)train it."
+            ), 503
         flash("Prediction model not available yet. Train a model from the Admin dashboard.", "warning")
         return redirect(url_for('predict'))
 
-    form = request.form
-    missing_numeric = [c for c in NUMERIC_COLS if form.get(c, "") == ""]
-    if missing_numeric:
-        flash(f"Missing numeric fields: {', '.join(missing_numeric)}", 'danger')
-        return redirect(url_for('predict'))
-
     try:
-        x_num = np.array([float(form[col]) for col in NUMERIC_COLS], dtype=float).reshape(1, -1)
+        form = request.form
+
+        # 1) Numeric inputs: blank -> 0.0, only flag non-numeric text
+        num_vals, bad = {}, []
+        for col in NUMERIC_COLS:
+            raw = (form.get(col, "") or "").strip()
+            if raw == "":
+                num_vals[col] = 0.0
+            else:
+                try:
+                    num_vals[col] = float(raw)
+                except ValueError:
+                    bad.append(col)
+        if bad:
+            if wants_json:
+                return jsonify(
+                    ok=False,
+                    error="BAD_NUMERIC_FIELDS",
+                    fields=bad,
+                    message=f"These numeric fields are invalid: {', '.join(bad)}"
+                ), 400
+            flash(f"These numeric fields are invalid: {', '.join(bad)}", 'danger')
+            return redirect(url_for('predict'))
+
+        x_num = np.array([num_vals[col] for col in NUMERIC_COLS], dtype=float).reshape(1, -1)
+
+        # 2) Categorical inputs: build encoder frame with safe defaults
         enc_df, enc_cols = _build_encoder_input_df(form, encoder)
         x_enc = encoder.transform(enc_df)
 
+        # 3) Match model input expectations
         n_model_in = getattr(model, 'n_features_in_', None)
         if n_model_in is not None and x_enc.shape[1] == n_model_in:
             x_final = x_enc
+            feature_names_prefix = []
         elif n_model_in is not None and (x_enc.shape[1] + x_num.shape[1]) == n_model_in:
             x_final = np.hstack([x_num, x_enc])
+            feature_names_prefix = NUMERIC_COLS
         else:
             x_final = np.hstack([x_num, x_enc])
+            feature_names_prefix = NUMERIC_COLS
 
-        proba = model.predict_proba(x_final)[0][1]
-        pred = (proba >= 0.5)
+        # 4) Predict
+        proba = float(model.predict_proba(x_final)[0][1])
+        pred = proba >= 0.5
 
+        # 5) Persist record
         payload = {k: form.get(k, "") for k in (NUMERIC_COLS + enc_cols)}
         rec = Prediction(
-            user_id=current_user.id, input_data=payload,
-            result='Yes' if pred else 'No', confidence=f"{proba:.3f}"
+            user_id=current_user.id,
+            input_data=payload,
+            result=('Yes' if pred else 'No'),
+            confidence=f"{proba:.3f}"
         )
-        db.session.add(rec); db.session.commit()
+        db.session.add(rec)
+        db.session.commit()
 
+        # 6) Build explanations (top drivers)
         try:
             feature_names_enc = list(encoder.get_feature_names_out(enc_cols))
         except Exception:
             feature_names_enc = list(getattr(encoder, "get_feature_names", lambda x: x)(enc_cols))
 
-        feature_names = feature_names_enc if (x_final.shape[1] == x_enc.shape[1]) \
-                        else NUMERIC_COLS + feature_names_enc
+        feature_names = (feature_names_prefix + feature_names_enc)[:x_final.shape[1]]
 
-        coef = model.coef_[0][:len(feature_names)]
+        # Get coefficients safely (not all models expose coef_)
+        if hasattr(model, "coef_") and model.coef_ is not None:
+            coef_vec = np.asarray(model.coef_).reshape(-1)
+        else:
+            coef_vec = np.zeros(len(feature_names), dtype=float)
+
+        coef = coef_vec[:len(feature_names)]
         x_row = x_final[0]
         top_drivers = _build_top_drivers(x_row, feature_names, coef, k=8)
 
+        # 7) UX context
         risk_label, risk_color = _risk_bucket(proba)
-        will_leave = bool(pred)
-        recs = _recommendations(payload, top_drivers, will_leave)
+        recs = _recommendations(payload, top_drivers, bool(pred))
 
         result_ctx = {
             "prediction_text": 'Employee will Attrit' if pred else 'Employee will NOT Attrit',
             "probability": f"{proba*100:.1f}%",
-            "pred": 'Yes' if pred else 'No', "proba": proba,
-            "risk_label": risk_label, "risk_color": risk_color,
-            "top_drivers": top_drivers, "recommendations": recs,
+            "pred": 'Yes' if pred else 'No',
+            "proba": proba,
+            "risk_label": risk_label,
+            "risk_color": risk_color,
+            "top_drivers": top_drivers,
+            "recommendations": recs,
             "input_data": payload, "InputData": payload,
-            "Result": 'Yes' if pred else 'No', "Confidence": f"{proba:.3f}",
+            "Result": 'Yes' if pred else 'No',
+            "Confidence": f"{proba:.3f}",
             "Timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         }
+
+        # JSON only when explicitly requested; otherwise render HTML
+        if wants_json:
+            return jsonify(ok=True, **result_ctx), 200
+
         try:
             return render_template('result.html', **result_ctx, results=[result_ctx])
         except Exception:
-            # Minimal fallback page
             return render_template_string("<pre>{{ctx|tojson(indent=2)}}</pre>", ctx=result_ctx)
 
     except Exception as e:
         db.session.rollback()
+        if wants_json:
+            return jsonify(ok=False, error="SERVER_ERROR", message=f"Prediction error: {e}"), 500
         flash(f"Prediction error: {e}", 'danger')
         return redirect(url_for('predict'))
+
+@app.post("/retention/save")
+@login_required
+def save_retention_plan():
+    # Minimal placeholder to avoid 404s and show a flash
+    immediate = (request.form.get("immediate_plan") or "").strip()
+    assigned  = (request.form.get("assigned_to") or "").strip()
+    # TODO: persist to your RetentionPlan model if/when ready
+    flash("Retention plan saved (demo).", "success")
+    return redirect(url_for("predict"))
+
 
 @app.route("/predict_form")
 @login_required
@@ -1182,9 +1412,33 @@ def reject_user(user_id):
     if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
-    user = User.query.get_or_404(user_id); db.session.delete(user); db.session.commit()
-    flash(f"❌ User {user.username} has been rejected and removed.", "danger")
+
+    user = User.query.get_or_404(user_id)
+
+    try:
+        # Purge all related data first
+        counts = _purge_user_relations(user_id)
+
+        # Now remove the user itself
+        db.session.delete(user)
+        db.session.commit()
+
+        msg = (
+            f"❌ User '{user.username}' rejected and permanently removed. "
+            f"Deleted: predictions {counts['predictions']}, appraisals {counts['appraisals']}, "
+            f"enrollments {counts['enrollments']}, performance reviews {counts['perf_reviews']}, "
+            f"retention plans {counts['retention_plans']}."
+        )
+        flash(msg, "danger")
+    except IntegrityError as e:
+        db.session.rollback()
+        flash(f"Could not fully remove user due to DB constraints: {e}", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error while removing user: {e}", "danger")
+
     return redirect(url_for('dashboard_admin'))
+
 
 @app.route('/admin/reset_password/<int:user_id>', methods=['POST'])
 @login_required
@@ -1203,26 +1457,33 @@ def delete_user(user_id):
     if get_role(current_user) != "ADMIN":
         flash("Access denied.", "danger")
         return redirect(url_for("home", open="login_admin"))
+
     u = User.query.get_or_404(user_id)
-    emp_refs = Appraisal.query.filter_by(employee_id=user_id).count()
-    sup_refs = Appraisal.query.filter_by(supervisor_id=user_id).count()
-    if emp_refs or sup_refs:
-        u.is_active = False
-        try:
-            db.session.commit()
-            flash(
-                f"User '{getattr(u, 'username', user_id)}' referenced by {emp_refs} (employee) / {sup_refs} (supervisor). Deactivated instead.",
-                "warning",
-            )
-        except IntegrityError:
-            db.session.rollback(); flash("Could not update user status.", "danger")
-        return redirect(request.referrer or url_for("dashboard"))
+
     try:
-        db.session.delete(u); db.session.commit(); flash("User deleted.", "success")
-    except IntegrityError:
-        db.session.rollback(); u.is_active = False; db.session.commit()
-        flash("User had linked data. Deactivated instead.", "warning")
-    return redirect(request.referrer or url_for("dashboard"))
+        # Purge all related data first
+        counts = _purge_user_relations(user_id)
+
+        # Now remove the user
+        db.session.delete(u)
+        db.session.commit()
+
+        msg = (
+            f"🗑️ User '{getattr(u, 'username', user_id)}' permanently removed. "
+            f"Deleted: predictions {counts['predictions']}, appraisals {counts['appraisals']}, "
+            f"enrollments {counts['enrollments']}, performance reviews {counts['perf_reviews']}, "
+            f"retention plans {counts['retention_plans']}."
+        )
+        flash(msg, "success")
+    except IntegrityError as e:
+        db.session.rollback()
+        flash(f"Could not fully remove user due to DB constraints: {e}", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting user: {e}", "danger")
+
+    return redirect(request.referrer or url_for("dashboard_admin"))
+
 
 @app.route('/admin/delete_old_models', methods=['POST'])
 @login_required
@@ -1246,4 +1507,8 @@ def delete_old_models():
         flash(f"⚠️ Error deleting old models: {e}", "danger")
     return redirect(url_for('dashboard_admin'))
 
-# No __main__ block needed when using `flask run`
+if __name__ == "__main__":
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=debug)
+
