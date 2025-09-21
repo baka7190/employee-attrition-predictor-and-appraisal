@@ -50,12 +50,53 @@ class User(db.Model, UserMixin):
 
     is_active = db.Column(db.Boolean, default=False)
 
+    # self-referential manager
     manager_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
     manager = db.relationship("User", remote_side=[id])
+
+    # ---- Helpful relationship collections (enable cascades) ----
+    # predictions owned by this user (delete with user)
+    predictions = db.relationship(
+        "Prediction",
+        backref=db.backref("user", lazy=True),
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy=True,
+    )
+
+    # appraisals where this user is the employee (delete with user)
+    employee_appraisals = db.relationship(
+        "Appraisal",
+        foreign_keys="Appraisal.employee_id",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy=True,
+    )
+
+    # appraisals where this user is the supervisor (keep appraisals; SET NULL)
+    supervisor_appraisals = db.relationship(
+        "Appraisal",
+        foreign_keys="Appraisal.supervisor_id",
+        passive_deletes=True,
+        lazy=True,
+    )
+
+    # performance review collections already work via backrefs below:
+    #  - employee_reviews (CASCADE) from PerformanceReview.employee
+    #  - manager_reviews / hr_reviews (SET NULL) from PerformanceReview.manager/hr
+
+    # retention plans (delete with user)
+    retention_plans = db.relationship(
+        "RetentionPlan",
+        backref=db.backref("user", lazy=True),
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy=True,
+    )
 
     @property
     def name(self):
@@ -83,8 +124,6 @@ class Prediction(db.Model):
     result     = db.Column(db.String(50))
     confidence = db.Column(db.String(50))
     timestamp  = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship("User", backref=db.backref("predictions", lazy=True))
 
 
 # --- Appraisal Cycle models ---
@@ -157,6 +196,7 @@ class PerformanceReview(db.Model):
         nullable=True
     )
 
+    # backrefs create user.employee_reviews / user.manager_reviews / user.hr_reviews
     employee = db.relationship("User", foreign_keys=[employee_id], backref="employee_reviews")
     manager  = db.relationship("User", foreign_keys=[manager_id],  backref="manager_reviews")
     hr       = db.relationship("User", foreign_keys=[hr_id],       backref="hr_reviews")
@@ -214,8 +254,9 @@ class Appraisal(db.Model):
         nullable=True
     )
 
-    employee_user   = db.relationship("User", foreign_keys=[employee_id])
-    supervisor_user = db.relationship("User", foreign_keys=[supervisor_id])
+    # explicit relationships; we keep names you used elsewhere
+    employee_user   = db.relationship("User", foreign_keys=[employee_id], passive_deletes=True)
+    supervisor_user = db.relationship("User", foreign_keys=[supervisor_id], passive_deletes=True)
 
     period_start = db.Column(db.Date, nullable=False)
     period_end   = db.Column(db.Date, nullable=False)
@@ -323,8 +364,3 @@ class RetentionPlan(db.Model):
     next_steps = db.Column(db.Text)
     assigned_to = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship("User", backref=db.backref("retention_plans", lazy=True, cascade="all, delete-orphan"))
-
-    def __repr__(self):
-        return f"<RetentionPlan {self.id} for user {self.user_id}>"

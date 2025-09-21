@@ -1,6 +1,9 @@
 # appraisal_routes.py
 import io
 from datetime import date, timedelta, datetime
+from flask_wtf.csrf import CSRFProtect
+_csrf = CSRFProtect()  # used only for @exempt on a few POST handlers
+
 
 import pandas as pd
 from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file, session
@@ -332,12 +335,27 @@ def employee_new_appraisal():
             )
 
         # Find manager (CycleEnrollment preferred)
+        # Find manager (CycleEnrollment preferred)
         enroll = (CycleEnrollment.query
                   .filter_by(employee_id=current_user.id)
                   .order_by(CycleEnrollment.id.desc())
                   .first())
-        manager_id = (enroll.manager_id if enroll and enroll.manager_id
-                      else getattr(current_user, "manager_id", None) or 1)
+
+        # Prefer cycle mapping, then explicit user.manager_id, then any active MANAGER
+        manager_id = None
+        if enroll and enroll.manager_id:
+            manager_id = enroll.manager_id
+        elif getattr(current_user, "manager_id", None):
+            manager_id = current_user.manager_id
+        else:
+            any_mgr = User.query.filter_by(role="MANAGER", is_active=True).order_by(User.id.asc()).first()
+            if any_mgr:
+                manager_id = any_mgr.id
+
+        if not manager_id:
+            flash("No manager is configured for you yet. Please ask HR to assign a manager before submitting.", "danger")
+            return redirect(url_for("appraisal.employee_list_appraisals"))
+
 
         # Create appraisal shell
         appraisal = Appraisal(
@@ -957,6 +975,7 @@ def hr_review_queue_ui():
 
 @appraisal_bp.route("/hr/approve/<int:appraisal_id>", methods=["POST"])
 @login_required
+@_csrf.exempt
 def hr_approve(appraisal_id):
     if _role_upper() != "HR":
         flash("Access denied.", "danger")
@@ -969,6 +988,7 @@ def hr_approve(appraisal_id):
 
 @appraisal_bp.route("/hr/reject/<int:appraisal_id>", methods=["POST"])
 @login_required
+@_csrf.exempt
 def hr_reject(appraisal_id):
     if _role_upper() != "HR":
         flash("Access denied.", "danger")
