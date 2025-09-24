@@ -1,12 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="dark">
 <head>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Employee Attrition & Appraisal System{% endblock %}</title>
 
-  <!-- Per-page extra head (styles, meta, etc.) -->
+  <!-- 0) Force theme before CSS loads (prevents half-light/FOUC) -->
+  <script>
+    (function () {
+      var key = 'eap-theme';
+      var saved = localStorage.getItem(key);
+      document.documentElement.setAttribute(
+        'data-bs-theme',
+        (saved === 'light' || saved === 'dark') ? saved : 'dark'
+      );
+    })();
+  </script>
+
   {% block head_extra %}{% endblock %}
 
   <!-- Fonts -->
@@ -18,123 +29,190 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
   <style>
-  :root{
-    --brand:#2563eb; --brand-2:#0ea5e9;
-    --navy-900:#0b1220; --navy-800:#101a2e;
-    --surface:#ffffff; --page-top:#f7f9fc; --page-bottom:#f3f6fb;
-    --ink:#0f172a; --muted:#6b7280; --line:#e6eaf2;
-    --shadow-lg:0 14px 38px rgba(2,6,23,.14);
-    --shadow-md:0 10px 24px rgba(2,6,23,.10); --radius:14px;
-  }
-  html,body{height:100%}
-  body{font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-       color:var(--ink); background:linear-gradient(180deg, var(--page-top), var(--page-bottom)); background-attachment: fixed;}
+    :root{
+      /* Brand */
+      --brand:#3b82f6; --brand-2:#22d3ee;
 
-  /* HEADER */
-  .utilbar{background:#0e1526;color:rgba(255,255,255,.8);font-size:.85rem;position:sticky;top:0;z-index:1031;border-bottom:1px solid rgba(255,255,255,.06);}
-  .utilbar .container-xxl{display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;}
-  .status-dot{width:.55rem;height:.55rem;border-radius:50%;background:#22c55e;display:inline-block;margin-right:.35rem;}
-  .util-links a{color:rgba(255,255,255,.85);margin-right:14px;text-decoration:none;}
-  .util-links a:hover{color:#fff;}
+      /* Slightly-dark base (not pitch black) */
+      --bg:#0b1220;           /* page background */
+      --surface:#111827;      /* cards/surfaces */
+      --ink:#e5e7eb;          /* main text */
+      --muted:#9aa4b2;        /* secondary text */
+      --line:rgba(148,163,184,.18);
 
-  .appbar{background:linear-gradient(180deg,rgba(11,18,32,.92),rgba(16,26,46,.88));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-          color:#fff;position:sticky;top:26px;z-index:1030;border-bottom:1px solid rgba(255,255,255,.06);transition:box-shadow .25s ease;}
-  .appbar.elevated{box-shadow:0 10px 30px rgba(2,6,23,.35);}
-  .navbar-brand{display:flex;align-items:center;gap:.6rem;}
-  .brand-logo{height:28px;}
-  .brand-text{font-weight:600;letter-spacing:.2px;}
-  .nav-search{min-width:260px;}
-  @media(max-width:991.98px){.nav-search{min-width:100%;}}
-  .nav-search .form-control{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.18);}
-  .nav-search .form-control::placeholder{color:rgba(255,255,255,.65);}
-  .avatar{width:34px;height:34px;border-radius:50%;background:#64748b;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;}
+      --glass:rgba(17,24,39,.65);
+      --glass-2:rgba(17,24,39,.45);
 
-  /* auth actions on mobile */
-  .nav-actions { display:flex; gap:12px; align-items:center; }
-  @media (max-width: 992px){
-    .nav-actions { flex-direction:column; width:100%; padding-top:10px; }
-    .nav-actions a, .nav-actions button { width:100%; text-align:center; }
-  }
+      --radius:16px;
+      --shadow-md:0 10px 24px rgba(2,6,23,.25);
+      --shadow-sm:0 6px 18px rgba(2,6,23,.2);
+    }
 
-  /* FOOTER */
-  .site-footer{background:#fff;margin-top:auto;border-top:1px solid var(--line);}
-  .footer-main{padding:28px 0;}
-  .footer-title{font-weight:700;margin-bottom:.6rem;}
-  .footer-links a{margin:0 .75rem .4rem 0;color:#475569;text-decoration:none;}
-  .footer-links a:hover{color:var(--brand);}
-  .footer-meta{border-top:1px solid var(--line);background:#f8fafc;color:#64748b;}
-  .footer-meta .container-xxl{display:flex;align-items:center;justify-content:space-between;padding:.65rem 0;}
-  .footer-logo{height:34px;filter:drop-shadow(0 2px 6px rgba(2,6,23,.12));}
-  .back-to-top{position:fixed;right:20px;bottom:20px;display:none;z-index:1050;border-radius:50%;box-shadow:var(--shadow-md);}
+    /* Optional: if user switches to light via the toggle */
+    [data-bs-theme="light"]{
+      --bg:#f3f6fb;
+      --surface:#ffffff;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --line:#e6eaf2;
+      --glass:rgba(255,255,255,.85);
+      --glass-2:rgba(255,255,255,.65);
+    }
+
+    html,body{height:100%}
+    body{
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(1400px 800px at -200px -200px, rgba(34,211,238,.25) 0%, transparent 40%),
+        radial-gradient(1200px 700px at 100% 0, rgba(59,130,246,.18) 0%, transparent 35%),
+        var(--bg);
+      background-attachment: fixed;
+      color:var(--ink);
+    }
+
+    /* === Layout: Header + Sidebar + Content === */
+    .app-header{
+      position:sticky; top:0; z-index:1040;
+      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      background:linear-gradient(180deg, var(--glass), var(--glass-2));
+      border-bottom:1px solid var(--line);
+    }
+    .app-header .brand{ display:flex; align-items:center; gap:.65rem; }
+    .brand-logo{height:28px}
+    .brand-text{font-weight:800; letter-spacing:.3px}
+
+    .sidebar{
+      position:sticky; top:64px; /* header height */
+      height:calc(100dvh - 64px);
+      border-right:1px solid var(--line);
+      background:linear-gradient(180deg, var(--glass), transparent);
+      backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    }
+    .sidebar .nav-link{
+      color:var(--muted);
+      border-radius:10px;
+      display:flex; align-items:center; gap:.6rem;
+      padding:.55rem .75rem;
+    }
+    .sidebar .nav-link .bi{font-size:1rem}
+    .sidebar .nav-link.active, .sidebar .nav-link:hover{
+      color:var(--ink); background:rgba(59,130,246,.16);
+    }
+    .sidebar .section-title{
+      font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+      padding:.75rem .35rem .35rem;
+    }
+
+    .content-wrap{ padding:1.25rem; }
+    @media (min-width: 1200px){ .content-wrap{ padding:2rem 2.25rem; } }
+    .page-card{
+      background:var(--surface); border:1px solid var(--line);
+      border-radius:var(--radius); box-shadow:var(--shadow-sm);
+    }
+
+    /* Utility bar (thin) */
+    .utilbar{ background:transparent; color:var(--muted); font-size:.85rem; border-bottom:1px dashed var(--line); }
+    .status-dot{width:.52rem;height:.52rem;border-radius:50%;background:#22c55e;display:inline-block;margin-right:.35rem}
+
+    /* Search */
+    .header-search .form-control{
+      background:transparent; border:1px solid var(--line); color:var(--ink);
+    }
+    .header-search .form-control::placeholder{ color:var(--muted); }
+
+    /* Footer */
+    .site-footer{ border-top:1px solid var(--line); background:linear-gradient(180deg, transparent, var(--glass-2)); }
+    .footer-main{ padding:24px 0 }
+
+    /* Floating actions */
+    .back-to-top{ position:fixed; right:18px; bottom:18px; display:none; z-index:1050; border-radius:50%; box-shadow:var(--shadow-md) }
+
+    /* Dropdown polish & modal */
+    .dropdown-menu{ border-radius:12px; box-shadow:var(--shadow-sm) }
+    .modal-content{ border-radius:16px }
+
+    /* Badges / buttons */
+    .badge-dot{width:.5rem;height:.5rem;border-radius:50%;display:inline-block}
+    .btn-ghost{ border:1px solid var(--line); background:transparent }
+
+    /* Dark-friendly form controls */
+    [data-bs-theme="dark"] .form-control,
+    [data-bs-theme="dark"] .input-group-text,
+    [data-bs-theme="dark"] .form-select{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(148,163,184,.25);
+      color: var(--ink);
+    }
+    [data-bs-theme="dark"] .form-control::placeholder{
+      color: rgba(229,231,235,.55);
+    }
   </style>
 </head>
 
 <body class="d-flex flex-column">
   {% set logo_url = url_for('static', filename='images/epas-logo.png') %}
-  <!--<a class="skip-link" href="#main-content">Skip to content</a>-->
 
-  <!-- Utility strip -->
+  <!-- === Super-thin utility strip === -->
   <div class="utilbar">
-    <div class="container-xxl">
+    <div class="container-fluid px-3 py-1 d-flex align-items-center justify-content-between">
       <div class="d-flex align-items-center gap-3">
         <span class="status-dot"></span><span>System: <strong>Online</strong></span>
         <span class="vr d-none d-md-inline mx-2"></span><span class="d-none d-md-inline">v1.0</span>
       </div>
-      <div class="util-links small">
-        <a href="#">User Guide</a><a href="#">Workflow</a><a href="#">Model</a><a href="#">FAQ</a><a href="#">Report</a>
+      <div class="d-none d-sm-flex gap-3 small">
+        <a href="#" class="link-secondary text-decoration-none">Guide</a>
+        <a href="#" class="link-secondary text-decoration-none">Workflow</a>
+        <a href="#" class="link-secondary text-decoration-none">Model</a>
+        <a href="#" class="link-secondary text-decoration-none">FAQ</a>
+        <a href="#" class="link-secondary text-decoration-none">Report</a>
       </div>
     </div>
   </div>
 
-  <!-- App bar -->
-  <nav class="navbar navbar-expand-lg navbar-dark appbar">
-    <div class="container-xxl">
-      <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-        <img src="{{ logo_url }}" alt="EPAS logo" class="brand-logo"><span class="brand-text">EPAS</span>
-      </a>
-      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#topNav"><span class="navbar-toggler-icon"></span></button>
+  <!-- === Header === -->
+  <header class="app-header">
+    <div class="container-fluid px-3" style="height:64px;">
+      <div class="h-100 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-ghost btn-sm d-inline-flex d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-controls="mobileNav" aria-label="Open menu">
+            <i class="bi bi-list"></i>
+          </button>
+          <a class="brand text-decoration-none text-reset" href="{{ url_for('dashboard') }}">
+            <img src="{{ logo_url }}" class="brand-logo" alt="EPAS logo">
+            <span class="brand-text">EPAS</span>
+          </a>
+        </div>
 
-      <div id="topNav" class="collapse navbar-collapse">
-        <ul class="navbar-nav me-auto">{% block nav_items %}{% endblock %}
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-speedometer2 me-1"></i> Dashboards</a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">My Dashboard</a></li>
-              {% if session.get('role')|lower in ['manager','hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_manager') }}">Manager</a></li>{% endif %}
-              {% if session.get('role')|lower in ['hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_hr') }}">HR</a></li>{% endif %}
-              {% if session.get('role')|lower == 'admin' %}<li><a class="dropdown-item" href="{{ url_for('dashboard_admin') }}">Admin</a></li>{% endif %}
-            </ul>
-          </li>
-          {% if session.get('role')|lower in ['manager','hr'] %}
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('predict') }}">Predict</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('prediction_history') }}">History</a></li>
-          {% endif %}
-        </ul>
-
-        <form class="d-flex nav-search ms-lg-3 my-2 my-lg-0" onsubmit="return false;">
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input class="form-control" placeholder="Search…" readonly>
+        <form class="header-search d-none d-md-flex" onsubmit="return false;" style="min-width:360px;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+            <input class="form-control" placeholder="Search (⌘/Ctrl + K)" readonly>
           </div>
         </form>
 
-        <ul class="navbar-nav align-items-center ms-lg-3 gap-1 w-100 w-lg-auto">
+        <ul class="nav align-items-center gap-1">
           <!-- Notifications -->
-          <li class="nav-item dropdown ms-lg-0 ms-auto">
-            <a class="nav-link position-relative" href="#" data-bs-toggle="dropdown">
+          <li class="nav-item dropdown">
+            <a class="nav-link position-relative px-2" href="#" data-bs-toggle="dropdown" aria-label="Notifications">
               <i class="bi bi-bell"></i>
               {% if notif_count and notif_count > 0 %}
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notif_count }}</span>
               {% endif %}
             </a>
-            <div class="dropdown-menu dropdown-menu-end p-0" style="width:320px;max-height:400px;overflow-y:auto;">
+            <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px;max-height:420px;overflow:auto;">
               <div class="list-group list-group-flush small">
                 {% if notif_items %}
                   {% for n in notif_items %}
                     <div class="list-group-item d-flex align-items-start gap-2">
-                      <i class="bi bi-activity text-primary"></i>
-                      <div>{{ n.result or "New record" }}<div class="text-muted">{{ n.timestamp.strftime("%Y-%m-%d %H:%M") }}</div></div>
+                      <span class="badge-dot bg-primary mt-2"></span>
+                      <div>
+                        <div class="fw-medium">{{ n.result or "New record" }}</div>
+                        <div class="text-muted">{{ n.timestamp.strftime("%Y-%m-%d %H:%M") }}</div>
+                      </div>
                     </div>
                   {% endfor %}
                 {% else %}
@@ -145,44 +223,169 @@
           </li>
 
           <!-- Theme toggle -->
-          <li class="nav-item"><button id="themeToggle" class="btn btn-sm btn-ghost"><i class="bi bi-moon-stars" id="themeIcon"></i></button></li>
+          <li class="nav-item">
+            <button id="themeToggle" class="btn btn-ghost btn-sm" type="button" aria-label="Toggle theme">
+              <i class="bi bi-moon-stars" id="themeIcon"></i>
+            </button>
+          </li>
 
-          <!-- Auth / User -->
+          <!-- User -->
           {% if current_user.is_authenticated %}
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
-                <span class="avatar">{{ current_user.username[:2]|upper }}</span>
-                <span class="d-none d-lg-inline">{{ current_user.username }}</span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person me-2"></i> Profile</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
-              </ul>
-            </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 px-2" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="rounded-circle d-inline-flex justify-content-center align-items-center" style="width:32px;height:32px;background:rgba(59,130,246,.2);color:#1e3a8a;font-weight:700;">
+                {{ current_user.username[:2]|upper }}
+              </span>
+              <span class="d-none d-lg-inline text-truncate" style="max-width:160px;">{{ current_user.username }}</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person me-2"></i> Profile</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+            </ul>
+          </li>
           {% else %}
-            <li class="nav-item ms-lg-3 w-100 w-lg-auto">
-              <div class="nav-actions">
-                <a href="{{ url_for('recover') }}" class="link-light text-decoration-none">Forgot Password</a>
-                <!-- Open REGISTER MODAL -->
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#signupModal">
-                  <i class="bi bi-person-plus"></i> Create Account
-                </button>
-              </div>
-            </li>
+          <li class="nav-item d-none d-sm-block">
+            <a href="{{ url_for('recover') }}" class="btn btn-link btn-sm text-decoration-none">Forgot Password</a>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#signupModal"><i class="bi bi-person-plus"></i> Create</button>
+          </li>
           {% endif %}
         </ul>
       </div>
     </div>
-  </nav>
+  </header>
 
-  <!-- MAIN -->
-  <main id="main-content" class="container-xxl pb-5">{% block content %}{% endblock %}</main>
+  <!-- === Body: Sidebar + Content === -->
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar (static on xl+, collapsible on smaller) -->
+      <aside class="sidebar col-xl-2 d-none d-xl-flex flex-column px-3 py-3">
+        <div class="section-title">Navigation</div>
+        <nav class="nav flex-column gap-1">
+          {% block nav_items %}{% endblock %}
+          <div class="dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-speedometer2"></i> Dashboards</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">My Dashboard</a></li>
+              {% if session.get('role')|lower in ['manager','hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_manager') }}">Manager</a></li>{% endif %}
+              {% if session.get('role')|lower in ['hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_hr') }}">HR</a></li>{% endif %}
+              {% if session.get('role')|lower == 'admin' %}<li><a class="dropdown-item" href="{{ url_for('dashboard_admin') }}">Admin</a></li>{% endif %}
+            </ul>
+          </div>
+          {% if session.get('role')|lower in ['manager','hr'] %}
+            <a class="nav-link" href="{{ url_for('predict') }}"><i class="bi bi-magic"></i> Predict</a>
+            <a class="nav-link" href="{{ url_for('prediction_history') }}"><i class="bi bi-clock-history"></i> History</a>
+          {% endif %}
+        </nav>
 
-  <!-- GLOBAL REGISTER MODAL -->
+        <hr class="my-3 text-secondary">
+
+        <div class="section-title">Resources</div>
+        <nav class="nav flex-column gap-1">
+          <a href="#" class="nav-link"><i class="bi bi-journal-text"></i> User Guide</a>
+          <a href="#" class="nav-link"><i class="bi bi-diagram-3"></i> Workflow</a>
+          <a href="#" class="nav-link"><i class="bi bi-cpu"></i> Model</a>
+          <a href="#" class="nav-link"><i class="bi bi-question-circle"></i> FAQ</a>
+          <a href="#" class="nav-link"><i class="bi bi-flag"></i> Report</a>
+        </nav>
+      </aside>
+
+      <!-- Content -->
+      <main id="main-content" class="col-xl-10 content-wrap">
+        <div class="page-card p-3 p-md-4 p-lg-5">
+          {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer inside content flow -->
+        <footer class="site-footer mt-4">
+          <div class="footer-main">
+            <div class="row g-4 align-items-start">
+              <div class="col-lg-4">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <img src="{{ logo_url }}" alt="EPAS logo" style="height:30px;">
+                  <strong>EPAS</strong>
+                </div>
+                <p class="small text-muted mb-2">Employee Attrition & Appraisal System helps forecast attrition and manage structured appraisals.</p>
+                <p class="small text-muted mb-0">&copy; {{ current_year }} EAAS · All rights reserved.</p>
+              </div>
+              <div class="col-lg-4">
+                <div class="fw-bold mb-1">Exports</div>
+                {% if session.get('role')|lower == 'hr' %}
+                <div class="d-flex flex-wrap gap-2">
+                  <a class="btn btn-sm btn-outline-danger" href="{{ url_for('hr_export_pdf') }}">PDF</a>
+                  <a class="btn btn-sm btn-outline-success" href="{{ url_for('hr_export_excel') }}">Excel</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('hr_export_csv') }}">CSV</a>
+                </div>
+                {% else %}
+                <div class="text-muted small">HR-only export tools</div>
+                {% endif %}
+              </div>
+              <div class="col-lg-4">
+                <div class="fw-bold mb-1">Contact</div>
+                <p class="small text-muted mb-1">Support: support@yourdomain.pg</p>
+                <p class="small text-muted">Hours: Mon–Fri, 08:00–17:00</p>
+                <div class="d-flex gap-2">
+                  <a class="btn btn-sm btn-outline-secondary" href="#"><i class="bi bi-linkedin"></i></a>
+                  <a class="btn btn-sm btn-outline-secondary" href="#"><i class="bi bi-github"></i></a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <!-- Mobile Offcanvas: mirrors sidebar; reuses nav_items -->
+  <div class="offcanvas offcanvas-start text-bg-dark" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title d-flex align-items-center gap-2" id="mobileNavLabel">
+        <img src="{{ logo_url }}" class="brand-logo" alt> <span class="fw-bold">EPAS</span>
+      </h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column gap-3">
+      <form class="d-flex" onsubmit="return false;">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input class="form-control" placeholder="Search…" readonly>
+        </div>
+      </form>
+      <div class="section-title text-uppercase small">Navigation</div>
+      <ul class="navbar-nav">
+        {{ self.nav_items() }}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-speedometer2"></i> Dashboards</a>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">My Dashboard</a></li>
+            {% if session.get('role')|lower in ['manager','hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_manager') }}">Manager</a></li>{% endif %}
+            {% if session.get('role')|lower in ['hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_hr') }}">HR</a></li>{% endif %}
+            {% if session.get('role')|lower == 'admin' %}<li><a class="dropdown-item" href="{{ url_for('dashboard_admin') }}">Admin</a></li>{% endif %}
+          </ul>
+        </li>
+        {% if session.get('role')|lower in ['manager','hr'] %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('predict') }}"><i class="bi bi-magic"></i> Predict</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('prediction_history') }}"><i class="bi bi-clock-history"></i> History</a></li>
+        {% endif %}
+      </ul>
+      <div class="mt-auto">
+        {% if not current_user.is_authenticated %}
+          <a href="{{ url_for('recover') }}" class="btn btn-link text-decoration-none text-white-50 w-100">Forgot Password</a>
+          <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#signupModal"><i class="bi bi-person-plus"></i> Create Account</button>
+        {% else %}
+          <a class="btn btn-outline-light w-100 mb-2" href="#" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person"></i> Profile</a>
+          <a class="btn btn-light w-100" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Register Modal (ids/names preserved) -->
   <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header text-white" style="background:linear-gradient(90deg,#0d6efd,#6f42c1)">
+        <div class="modal-header text-white" style="background:linear-gradient(90deg,var(--brand),var(--brand-2))">
           <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i> Create your account</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -191,7 +394,6 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
           <div class="modal-body p-4">
-            <!-- Sample autofill buttons -->
             <div class="d-flex justify-content-end gap-2 mb-3" id="demoFillers">
               <button type="button" class="btn btn-outline-primary btn-sm" data-fill="employee">Sample: Employee</button>
               <button type="button" class="btn btn-outline-success btn-sm" data-fill="manager">Sample: Manager</button>
@@ -263,7 +465,7 @@
             </div>
 
             <hr class="my-4">
-            <h6 class="mb-3"><i class="bi bi-card-checklist me-1"></i> Employee Details</h6>
+            <h6 class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-card-checklist"></i> Employee Details</h6>
             <div id="employeeFields" class="row g-3 d-none">
               <div class="col-md-6">
                 <label class="form-label">Full Name</label>
@@ -297,9 +499,9 @@
           </div>
 
           <div class="modal-footer d-flex justify-content-between">
-            <div class="text-muted small">
-              <i class="bi bi-shield-check me-1"></i>
-              New accounts are created as <strong>Pending</strong> until approved by an Admin.
+            <div class="text-muted small d-flex align-items-center gap-2">
+              <i class="bi bi-shield-check"></i>
+              <span>New accounts are created as <strong>Pending</strong> until approved by an Admin.</span>
             </div>
             <div class="d-flex gap-2">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -311,65 +513,41 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="site-footer">
-    <div class="footer-main">
-      <div class="container-xxl row g-4">
-        <div class="col-lg-4">
-          <img src="{{ logo_url }}" alt="EPAS logo" class="footer-logo mb-2">
-          <p class="small text-muted">Employee Attrition & Appraisal System helps forecast attrition and manage structured appraisals.</p>
-          <p class="small mb-0">&copy; {{ current_year }} EAAS · All rights reserved.</p>
-        </div>
-        <div class="col-lg-4">
-          <div class="footer-title">Resources</div>
-          <div class="footer-links small"><a href="#">Guide</a><a href="#">Workflow</a><a href="#">Model</a><a href="#">FAQ</a></div>
-          {% if session.get('role')|lower == 'hr' %}
-            <div class="footer-title mt-2">HR Exports</div>
-            <a class="btn btn-sm btn-outline-danger" href="{{ url_for('hr_export_pdf') }}">PDF</a>
-            <a class="btn btn-sm btn-outline-success" href="{{ url_for('hr_export_excel') }}">Excel</a>
-            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('hr_export_csv') }}">CSV</a>
-          {% endif %}
-        </div>
-        <div class="col-lg-4">
-          <div class="footer-title">Contact</div>
-          <p class="small text-muted mb-1">Support: support@yourdomain.pg</p>
-          <p class="small text-muted">Hours: Mon–Fri, 08:00–17:00</p>
-          <div class="d-flex gap-2">
-            <a class="btn btn-sm btn-outline-secondary" href="#"><i class="bi bi-linkedin"></i></a>
-            <a class="btn btn-sm btn-outline-secondary" href="#"><i class="bi bi-github"></i></a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <section class="footer-meta">
-      <div class="container-xxl d-flex justify-content-between small">
-        <div><a href="#">Privacy</a> · <a href="#">Terms</a> · <a href="#">Accessibility</a></div>
-        <div>Made with ❤️ · EAAS</div>
-      </div>
-    </section>
-  </footer>
-
-  <a href="#" class="back-to-top btn btn-light"><i class="bi bi-arrow-up-short fs-3"></i></a>
+  <!-- Floating back-to-top -->
+  <a href="#" class="back-to-top btn btn-light" aria-label="Back to top"><i class="bi bi-arrow-up-short fs-3"></i></a>
 
   <!-- Bootstrap -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+  <!-- App Scripts -->
   <script>
-    // Elevation on scroll + back-to-top
-    const appbar=document.querySelector('.appbar'), backTop=document.querySelector('.back-to-top');
-    window.addEventListener('scroll',()=>{const s=window.scrollY;appbar?.classList.toggle('elevated',s>6);backTop.style.display=s>200?'inline-flex':'none';});
-    backTop?.addEventListener('click',e=>{e.preventDefault();window.scrollTo({top:0,behavior:'smooth'});});
+    // Elevation/back-to-top
+    const backTop=document.querySelector('.back-to-top');
+    window.addEventListener('scroll',()=>{const s=window.scrollY; backTop.style.display=s>240?'inline-flex':'none';});
+    backTop?.addEventListener('click',e=>{e.preventDefault();window.scrollTo({top:0,behavior:'smooth'})});
 
-    // Theme toggle
+    // Theme toggle (persist; default dark unless explicitly saved light)
     (function(){
-      const root=document.documentElement,key='eap-theme';
-      const btn=document.getElementById('themeToggle'),icon=document.getElementById('themeIcon');
-      function setTheme(t){root.setAttribute('data-bs-theme',t);localStorage.setItem(key,t);icon.className=(t==='dark')?'bi bi-sun':'bi bi-moon-stars';}
-      setTheme(localStorage.getItem(key)||'light');
-      btn?.addEventListener('click',()=>setTheme(root.getAttribute('data-bs-theme')==='dark'?'light':'dark'));
+      const root = document.documentElement;
+      const key  = 'eap-theme';
+      const btn  = document.getElementById('themeToggle');
+      const icon = document.getElementById('themeIcon');
+
+      function setTheme(t){
+        root.setAttribute('data-bs-theme', t);
+        localStorage.setItem(key, t);
+        if (icon) icon.className = (t === 'dark') ? 'bi bi-sun' : 'bi bi-moon-stars';
+      }
+
+      const saved = localStorage.getItem(key);
+      setTheme((saved === 'light' || saved === 'dark') ? saved : 'dark');
+
+      btn && btn.addEventListener('click', () => {
+        setTheme(root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+      });
     })();
 
-    // Signup modal JS (strength, show/hide, employee fields)
+    // Modal helpers: strength + show/hide + conditional fields
     (function(){
       const form = document.querySelector('#signupModal form.needs-validation');
       const pw1 = document.getElementById('pw1');
@@ -429,35 +607,13 @@
       });
     })();
 
-    /* === Demo autofill buttons (Employee, Manager, HR) — fixed === */
+    // Demo autofill buttons (backend fields unchanged)
     (function(){
       const samples = {
-        employee: {
-          username: "evelyn.park",
-          email: "evelyn.park@acme.com",
-          password: "EPark#2025!",
-          role: "EMPLOYEE",
-          agree: true,
-          details: {
-            name: "Evelyn Park", employee_id: "E10234", department: "Sales",
-            title: "Sales Associate", manager_name: "Jordan Reed",
-            phone: "512-555-0163", location: "Austin, TX"
-          }
-        },
-        manager: {
-          username: "marco.lee",
-          email: "marco.lee@acme.com",
-          password: "MLee#2025!",
-          role: "MANAGER",
-          agree: true
-        },
-        hr: {
-          username: "nina.patel",
-          email: "nina.patel@acme.com",
-          password: "NPatel#2025!",
-          role: "HR",
-          agree: true
-        }
+        employee: { username: "evelyn.park", email: "evelyn.park@acme.com", password: "EPark#2025!", role: "EMPLOYEE", agree: true,
+          details: { name: "Evelyn Park", employee_id: "E10234", department: "Sales", title: "Sales Associate", manager_name: "Jordan Reed", phone: "512-555-0163", location: "Austin, TX" } },
+        manager:  { username: "marco.lee",  email: "marco.lee@acme.com",  password: "MLee#2025!",  role: "MANAGER", agree: true },
+        hr:       { username: "nina.patel", email: "nina.patel@acme.com", password: "NPatel#2025!", role: "HR",      agree: true }
       };
 
       const $form = document.querySelector('#signupModal form.needs-validation');
@@ -470,11 +626,7 @@
       const $role  = $form.querySelector('#signupRoleSelect');
       const $agree = $form.querySelector('#agree');
 
-      function setVal(el, v){
-        if(!el) return;
-        el.value = v;
-        el.dispatchEvent(new Event('input', { bubbles:true }));
-      }
+      function setVal(el, v){ if(!el) return; el.value = v; el.dispatchEvent(new Event('input', { bubbles:true })); }
       function setChecked(el, v){ if(el) el.checked = !!v; }
       function setChange(el){ if(el) el.dispatchEvent(new Event('change', { bubbles:true })); }
 
@@ -501,25 +653,34 @@
         btn.addEventListener('click', ()=> fill(samples[btn.dataset.fill]));
       });
     })();
+
+    // CSRF header for fetch
+    (function(){
+      const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
+      if (!window.fetch || !CSRF) return;
+      const origFetch = window.fetch;
+      window.fetch = (input, init={})=>{
+        const method = (init.method||'GET').toUpperCase();
+        if (['POST','PUT','PATCH','DELETE'].includes(method)) {
+          init.headers = Object.assign({}, init.headers, {'X-CSRFToken': CSRF});
+        }
+        return origFetch(input, init);
+      };
+    })();
+
+    // Command palette hint (Ctrl/Cmd+K could focus header search later)
+    (function(){
+      const field = document.querySelector('.header-search input');
+      window.addEventListener('keydown', (e)=>{
+        const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+        if ((isMac && e.metaKey && e.key.toLowerCase()==='k') || (!isMac && e.ctrlKey && e.key.toLowerCase()==='k')) {
+          e.preventDefault(); field?.focus();
+        }
+      });
+    })();
   </script>
 
-  <!-- Page-specific scripts (e.g., predict_form’s handlers) -->
+  <!-- Page-specific scripts -->
   {% block scripts_extra %}{% endblock %}
-<script>
-  // Attach CSRF header to all fetch POST/PUT/PATCH/DELETE automatically
-  (function(){
-    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
-    if (!window.fetch || !CSRF) return;
-    const origFetch = window.fetch;
-    window.fetch = (input, init={})=>{
-      const method = (init.method||'GET').toUpperCase();
-      if (['POST','PUT','PATCH','DELETE'].includes(method)) {
-        init.headers = Object.assign({}, init.headers, {'X-CSRFToken': CSRF});
-      }
-      return origFetch(input, init);
-    };
-  })();
-</script>
-
 </body>
 </html>

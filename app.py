@@ -1093,21 +1093,51 @@ def hr_export_excel():
 # ----- Notifications for templates -----
 @app.context_processor
 def inject_notifications():
-    count = 0; items = []
-    if current_user.is_authenticated:
+    """
+    Build small notification counters for the header.
+    Be defensive: if a previous handler in this same request caused a DB error,
+    Postgres leaves the transaction in 'aborted' state; clear it first.
+    """
+    count, items = 0, []
+    if not current_user.is_authenticated:
+        return dict(notif_count=0, notif_items=[])
+
+    # If a prior error happened in this request, clear aborted tx now.
+    try:
+        db.session.rollback()
+    except Exception:
+        pass
+
+    try:
+        role = get_role(current_user)
+        if role in ["MANAGER", "HR"]:
+            q = (Prediction.query
+                 .filter_by(user_id=current_user.id)
+                 .order_by(Prediction.timestamp.desc()))
+            count = q.count()
+            items = q.limit(5).all()
+        elif role == "EMPLOYEE":
+            # Use aggregate to avoid loading rows
+            count = (db.session.query(func.count(Appraisal.id))
+                     .filter(
+                         Appraisal.employee_id == current_user.id,
+                         Appraisal.status == ReviewStatus.DRAFT
+                     )
+                     .scalar()) or 0
+            items = []
+    except Exception as e:
+        # Log, rollback, and return empty notifications (don’t break the page)
+        app.logger.warning("inject_notifications failed: %s", e)
         try:
-            if get_role(current_user) in ["MANAGER", "HR"]:
-                count = Prediction.query.filter_by(user_id=current_user.id).count()
-                items = Prediction.query.order_by(Prediction.timestamp.desc()).limit(5).all()
-            if get_role(current_user) == "EMPLOYEE":
-                count = Appraisal.query.filter_by(employee_id=current_user.id, status=ReviewStatus.DRAFT).count()
-        except Exception as e:
-            app.logger.warning("inject_notifications failed: %s", e)
             db.session.rollback()
+        except Exception:
+            pass
+        count, items = 0, []
+
     return dict(notif_count=count, notif_items=items)
 
 
-# ----- Predict -----
+
 # ----- Predict -----
 @app.route('/predict', methods=['GET', 'POST'])
 @login_required

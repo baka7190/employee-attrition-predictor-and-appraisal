@@ -1,109 +1,115 @@
 {% extends "base.html" %}
 
 {% block head_extra %}
+<!-- Optional professional font (falls back to system fonts if blocked) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
-  body { background: #f9fafb; }
-  .page-full { width: 100%; padding: 0 1rem; }
-  .result-card {
-    max-width: 100%;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(16,24,40,.08);
-    background: #fff;
-    padding: 2rem;
-    margin-bottom: 2rem;
+  :root{
+    --ink:#0b1220;
+    --muted:#64748b;
   }
-  .badge-lg {
-    font-size: 1rem;
-    padding: .5rem 1rem;
-    border-radius: 999px;
-  }
+  html,body{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+  body { background: #f6f7fb; color: var(--ink); }
+  .page-xxl { max-width: 1200px; margin-inline: auto; padding: 1rem; }
+
+  .hero-card{ border:1px solid #e7eaf3; background:#fff; border-radius: 1.25rem; box-shadow: 0 8px 28px rgba(15,23,42,.08); }
+  .hero-title{ font-weight: 800; letter-spacing:.2px; }
+  .subtle{ color: var(--muted); }
+
+  .stat-card{ background: #f8f9fb; border:1px solid #edf1f7; border-radius: .85rem; }
+  .badge-lg{ font-size: .95rem; padding: .45rem .9rem; border-radius: 999px; }
+
+  .card-pro{ border:1px solid #e7eaf3; border-radius: 1rem; }
+  .card-pro .card-header{ background:#fff; border-bottom:1px solid #eef1f6; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-full">
+<div class="page-xxl">
 
-  <!-- Prediction Result -->
-  <div class="result-card text-center">
-    <h6 class="text-muted">PREDICTION RESULT</h6>
-    <h2 class="fw-bold mb-2">Attrition Level</h2>
-    <span class="badge badge-lg {% if risk_label == 'High' %}bg-danger{% elif risk_label == 'Moderate' %}bg-warning{% else %}bg-success{% endif %}">
+  <!-- Result / Hero -->
+  <div class="hero-card p-4 p-lg-5 mb-4 text-center">
+    <p class="text-uppercase small subtle mb-1">Prediction Result</p>
+    <h2 class="hero-title mb-2">Attrition Level</h2>
+    <span class="badge badge-lg {% if risk_label == 'High' %}bg-danger{% elif risk_label == 'Moderate' %}bg-warning text-dark{% else %}bg-success{% endif %}">
       {{ risk_label }}
     </span>
-    <p class="mt-2">{{ prediction_text }}</p>
+    <p class="mt-2 subtle mb-4">{{ prediction_text }}</p>
 
-    <div class="row mt-4">
-      <div class="col-md-6">
-        <div class="p-3 bg-light rounded">
-          <div class="small text-muted">Attrition probability</div>
-          <div class="fw-bold fs-4">{{ (proba*100)|round(1) }}%</div>
+    <div class="row g-3 g-lg-4 justify-content-center">
+      <div class="col-12 col-md-6 col-lg-5">
+        <div class="stat-card p-3 p-lg-4 h-100">
+          <div class="small subtle mb-1">Attrition probability</div>
+          <div class="fw-bold display-6">{{ (proba*100)|round(1) }}%</div>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="p-3 bg-light rounded">
-          <div class="small text-muted">Confidence level</div>
-          <div class="fw-bold fs-4">100%</div>
+      <div class="col-12 col-md-6 col-lg-5">
+        <div class="stat-card p-3 p-lg-4 h-100">
+          <div class="small subtle mb-1">Confidence level</div>
+          <div class="fw-bold display-6">100%</div>
         </div>
       </div>
     </div>
 
-    <!-- Action buttons -->
-    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
-      <!-- Recommendations: scroll -->
+    <!-- Actions -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 gap-lg-3 mt-4">
       <a href="#recommendations-section" class="btn btn-outline-secondary">
-        <i class="bi bi-list"></i> Recommendations
+        <i class="bi bi-list me-1"></i>Recommendations
       </a>
-
-      <!-- Explain: modal -->
       <a href="#" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#explainModal">
-        <i class="bi bi-search"></i> Explain
+        <i class="bi bi-search me-1"></i>Explain
       </a>
-
-      <!-- Start plan: retention plan modal -->
       <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#planModal">
-        <i class="bi bi-people"></i> Start plan
+        <i class="bi bi-people me-1"></i>Start plan
       </a>
-
-      <!-- New prediction -->
       <a href="{{ url_for('predict') }}" class="btn btn-primary">
-        <i class="bi bi-arrow-repeat"></i> New prediction
+        <i class="bi bi-arrow-repeat me-1"></i>New prediction
       </a>
     </div>
     <div class="small subtle mt-3">Model: Logistic Regression</div>
   </div>
 
-  <!-- Recommendations Section -->
-  <div id="recommendations-section" class="result-card">
-    <div class="d-flex justify-content-between align-items-center">
-      <h5><i class="bi bi-bar-chart me-1"></i> Recommended actions</h5>
+  <!-- Recommendations -->
+  <div id="recommendations-section" class="card card-pro mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Recommended actions</h5>
       <div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-secondary" onclick="copyText()">Copy</button>
-        <button class="btn btn-outline-danger" onclick="window.print()">PDF</button>
+        <button class="btn btn-outline-secondary" id="copyBtn" onclick="copyText()">
+          <i class="bi bi-clipboard-check me-1"></i>Copy
+        </button>
+        <button class="btn btn-outline-danger" onclick="window.print()">
+          <i class="bi bi-filetype-pdf me-1"></i>PDF
+        </button>
       </div>
     </div>
-    <ul class="list-group list-group-flush mt-3">
-      {% for r in recommendations %}
-        <li class="list-group-item">{{ r }}</li>
-      {% endfor %}
-    </ul>
+    <div class="card-body p-0">
+      <ul class="list-group list-group-flush">
+        {% for r in recommendations %}
+          <li class="list-group-item py-3">{{ r }}</li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
+
 </div>
 
 <!-- Explain Modal -->
 <div class="modal fade" id="explainModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="border-radius:16px;">
+    <div class="modal-content rounded-4">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-search"></i> Explanation of Prediction</h5>
+        <h5 class="modal-title"><i class="bi bi-search me-2"></i>Explanation of Prediction</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         {% if top_drivers %}
         <ul class="list-group">
           {% for d in top_drivers %}
-            <li class="list-group-item d-flex justify-content-between">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
               <span>{{ d.name }} <span class="text-muted small">({{ d.direction }})</span></span>
-              <span class="fw-bold">{{ d.value }}</span>
+              <span class="fw-semibold">{{ d.value }}</span>
             </li>
           {% endfor %}
         </ul>
@@ -118,28 +124,29 @@
 <!-- Retention Plan Modal -->
 <div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="border-radius:16px;">
+    <div class="modal-content rounded-4">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-people"></i> Retention Plan</h5>
+        <h5 class="modal-title"><i class="bi bi-people me-2"></i>Retention Plan</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <!-- Use safe_url_for to avoid BuildError if the route doesn't exist yet -->
+
       <form method="POST" action="{{ safe_url_for('save_retention_plan') or '#' }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
           <input type="hidden" name="user_id" value="{{ current_user.id }}">
+
           <div class="mb-3">
             <label class="form-label">Immediate Actions</label>
-            <textarea class="form-control" name="immediate_plan" rows="3" required>
-{% for r in recommendations %}- {{ r }}
-{% endfor %}
-            </textarea>
+            <textarea class="form-control" name="immediate_plan" rows="3" required>{% for r in recommendations %}- {{ r }}
+{% endfor %}</textarea>
           </div>
+
           <div class="mb-3">
             <label class="form-label">Next Steps</label>
             <textarea class="form-control" name="next_steps" rows="3" placeholder="E.g. review after 30 days..."></textarea>
           </div>
-          <div class="mb-3">
+
+          <div class="mb-0">
             <label class="form-label">Assigned HR/Manager</label>
             <input type="text" class="form-control" name="assigned_to" value="{{ current_user.username }}">
           </div>
@@ -152,6 +159,18 @@
     </div>
   </div>
 </div>
+
+<!-- Toast (copy success) -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1080">
+  <div id="copyToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        Recommendations copied to clipboard.
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts_extra %}
@@ -160,7 +179,13 @@
     const text = Array.from(document.querySelectorAll('#recommendations-section li'))
       .map(li => li.innerText).join("\n");
     navigator.clipboard.writeText(text).then(() => {
-      alert("✅ Recommendations copied to clipboard!");
+      const el = document.getElementById('copyToast');
+      if (window.bootstrap && el) {
+        const t = bootstrap.Toast.getOrCreateInstance(el);
+        t.show();
+      } else {
+        alert("✅ Recommendations copied to clipboard!");
+      }
     });
   }
 </script>

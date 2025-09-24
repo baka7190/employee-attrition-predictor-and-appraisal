@@ -15,7 +15,9 @@
   <style>
     :root{
       --brand-primary:#0d6efd;
-      --hero-bg:#165f73;
+      --hero-top:#0f4c5c;       /* top gradient */
+      --hero-mid:#165f73;       /* middle gradient */
+      --hero-btm:#0e3f53;       /* bottom gradient */
       --panel-border:#0e1720;
       --note-bg:#eef2f7;
     }
@@ -26,27 +28,109 @@
       font-style:normal;
       font-display:swap;
     }
-    /* reset default body margin so edges line up exactly */
+
     body{ margin:0; background:#fff; color:#111;
       font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
 
+    /* ---------- Topbar (unchanged, with subtle glow on hover) ---------- */
     .navbar{
       background:#fff; border:1px solid #dfe3ea; border-radius:6px;
       margin:16px 16px 0; padding:6px 10px;
+      position:relative; isolation:isolate;
+      --block-glow: rgba(13,110,253,.25);
+      transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
     }
-    .hero{
-      background:var(--hero-bg); color:#fff; border:1px solid #0b1325; border-radius:6px;
-      margin:10px 16px 16px; padding:72px 10px 64px; min-height:380px; text-align:center;
+    .navbar::before{
+      content:''; position:absolute; inset:-2px; border-radius:8px; z-index:-1;
+      background: radial-gradient(160px 160px at var(--mx,50%) var(--my,0%), var(--block-glow), transparent 60%) no-repeat;
+      opacity:0; filter:blur(10px); transition:opacity .25s ease;
     }
-    .hero .kicker{ font-family:"Billion Dreams","Pacifico",cursive; font-size:clamp(20px,2.6vw,28px); line-height:1.15; margin-bottom:16px; }
-    .hero .title{ font-family:"Poppins",sans-serif; text-transform:uppercase; letter-spacing:.02em; font-weight:700; font-size:clamp(22px,4.2vw,42px); margin:0 8px 18px; }
-    .hero .tag{ font-family:"Pristina","Billion Dreams","Pacifico",cursive; font-size:clamp(16px,2.2vw,22px); line-height:1.2; }
+    .navbar:hover{ box-shadow:0 8px 24px rgba(0,0,0,.08), 0 0 0 1px var(--block-glow); border-color:transparent; }
+    .navbar:hover::before{ opacity:1; }
 
-    /* panels */
+    /* ---------- HERO (redesigned blue part + logo badge) ---------- */
+    .hero{
+      position:relative; overflow:hidden;
+      color:#fff;
+      border:1px solid #0b1325; border-radius:12px;
+      margin:10px 16px 16px; padding:96px 16px 84px; min-height:380px; text-align:center;
+      background:
+        radial-gradient(900px 380px at 50% -30%, rgba(255,255,255,.08), transparent 60%),
+        linear-gradient(180deg, var(--hero-top) 0%, var(--hero-mid) 55%, var(--hero-btm) 100%);
+    }
+    .hero::before{
+      content:""; position:absolute; inset:auto -10% 35% -10%; height:45%;
+      background: linear-gradient( to right, rgba(255,255,255,.08), rgba(255,255,255,0) 55%),
+                  linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.0));
+      transform: skewY(-5deg);
+      pointer-events:none;
+    }
+    .hero::after{
+      content:""; position:absolute; left:-5%; right:-5%; bottom:-1px; height:120px;
+      background:
+        radial-gradient(1200px 120px at 50% 0, rgba(255,255,255,.12), transparent 70%),
+        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,0));
+      filter: blur(2px);
+      pointer-events:none;
+    }
+
+    /* === Brand badge (square, shows real app icon) === */
+    .brand-badge{
+      --size: 156px;
+      width:var(--size); height:var(--size);
+      position:absolute; left:50%; top:18px; transform:translateX(-50%);
+      border-radius:24px;
+      background: transparent; border:0;
+      box-shadow: 0 10px 25px rgba(0,0,0,.25), 0 0 0 6px rgba(13,202,240,.08), 0 0 40px rgba(13,202,240,.30);
+      display:grid; place-items:center;
+      padding:0; isolation:isolate;
+    }
+    .brand-badge img{
+      width:100%; height:100%; object-fit:contain; display:block;
+      border-radius:24px;
+      filter:none;
+    }
+    .brand-badge.no-img::after{
+      content:"LOGO"; color:#fff; opacity:.75; font-weight:700; letter-spacing:.06em;
+    }
+
+    .hero .kicker{ font-family:"Billion Dreams","Pacifico",cursive; font-size:clamp(18px,2.2vw,26px); line-height:1.15; margin:54px 0 10px; }
+    .hero .title{
+      font-family:"Poppins",sans-serif; text-transform:uppercase; letter-spacing:.02em; font-weight:700;
+      font-size:clamp(20px,4.2vw,40px); margin:0 auto 14px; max-width:1100px;
+      padding:10px 14px; border-radius:10px;
+      background:rgba(6,28,40,.36); backdrop-filter:saturate(140%) blur(2px);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .hero .tag{
+      font-family:"Pristina","Billion Dreams","Pacifico",cursive;
+      font-size:clamp(14px,1.8vw,18px); line-height:1.25; opacity:.92;
+    }
+
+    /* ---------- Panels / blocks (unchanged but interactive) ---------- */
     .panels-wrap{ margin:0 16px 8px; }
     .panel-white{ background:#fff; border:2px solid var(--panel-border); border-radius:4px; min-height:160px; padding:12px 16px 14px; }
+    .panel-white,
+    .instructions-block{
+      position:relative; isolation:isolate;
+      --block-glow: rgba(13,110,253,.22);
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .25s ease;
+    }
+    .panel-white::before,
+    .instructions-block::before{
+      content:''; position:absolute; inset:-2px; border-radius:8px; z-index:-1;
+      background: radial-gradient(180px 180px at var(--mx,50%) var(--my,0%), var(--block-glow), transparent 62%) no-repeat;
+      opacity:0; filter:blur(12px); transition:opacity .25s ease;
+    }
+    .panel-white:hover,
+    .instructions-block:hover{
+      transform: translateY(-4px);
+      border-color: transparent;
+      box-shadow: 0 14px 32px rgba(0,0,0,.12), 0 0 0 1px var(--block-glow), 0 0 34px var(--block-glow);
+    }
+    .panel-white:hover::before,
+    .instructions-block:hover::before{ opacity:1; }
 
-    /* grid keeps only the middle gap, edges are flush with hero */
     .two-panels{ display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
     @media (max-width: 992px){ .two-panels{ grid-template-columns:1fr; } }
     .two-panels > .panel-cell{ display:flex; }
@@ -59,6 +143,7 @@
 
     .instructions-block{
       margin:14px 16px 0; background:var(--note-bg); border:1px solid #cfd6df; border-radius:6px; padding:10px 12px 0;
+      --block-glow: rgba(13,202,240,.28);
     }
     .instructions-block .leadline{ font-weight:600; }
     .instructions-block ol{ margin:6px 0 10px 20px; color:#334155; font-size:14px; }
@@ -68,7 +153,97 @@
     .portal-card{ background:#fff; border:1px solid #e6e9ee; border-radius:12px; padding:18px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.04); }
     .portal-icon{ display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; margin:0 auto 10px; font-size:28px; }
     footer{ border-top:1px solid #e7eaf0; margin:10px 16px; padding:8px 0 16px; color:#6b7280; text-align:center; }
+
+    /* ---------- Portal cards fancy hover ---------- */
+    .portal-card{
+      position: relative;
+      isolation: isolate;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .25s ease;
+      cursor: pointer;
+      --glow: rgba(13,110,253,.55); /* default (Employee blue) */
+    }
+    .portal-card:has(.btn-success){ --glow: rgba(25,135,84,.55); }
+    .portal-card:has(.btn-info){    --glow: rgba(13,202,240,.55); }
+    .portal-card:has(.btn-dark){    --glow: rgba(33,37,41,.70); }
+    @supports not (selector(:has(*))){
+      .portal-grid .portal-card:nth-child(2){ --glow: rgba(25,135,84,.55); }
+      .portal-grid .portal-card:nth-child(3){ --glow: rgba(13,202,240,.55); }
+      .portal-grid .portal-card:nth-child(4){ --glow: rgba(33,37,41,.70); }
+    }
+    .portal-card::before{
+      content:'';
+      position:absolute; inset:-2px; border-radius:12px;
+      background: radial-gradient(140px 140px at var(--mx,50%) var(--my,0%), var(--glow), transparent 60%) no-repeat;
+      opacity:0; filter: blur(8px); transition: opacity .25s ease; z-index:-1;
+    }
+    .portal-card:hover{
+      transform: translateY(-6px) scale(1.01);
+      border-color: transparent;
+      box-shadow: 0 12px 30px rgba(0,0,0,.14), 0 0 0 1.5px var(--glow), 0 0 36px var(--glow);
+    }
+    .portal-card:hover::before{ opacity:1; }
+    .portal-icon{ position: relative; transition: transform .25s ease, box-shadow .25s ease; }
+    .portal-card:hover .portal-icon{ transform: translateY(-2px) scale(1.06); }
+    .portal-icon::after{
+      content:''; position:absolute; inset:-8px; border-radius:50%;
+      box-shadow: 0 0 0 0 var(--glow), inset 0 0 0 rgba(255,255,255,0);
+      opacity:0; transition: all .3s ease;
+    }
+    .portal-card:hover .portal-icon::after{ opacity:.95; box-shadow: 0 0 24px 6px var(--glow), inset 0 0 18px rgba(255,255,255,.45); }
+    .portal-card h6{ transition: color .2s ease; }
+    .portal-card:hover h6{ color:#0b1325; }
+    .portal-card:focus-visible{ outline:none; transform: translateY(-6px); box-shadow: 0 0 0 3px var(--glow), 0 12px 30px rgba(0,0,0,.16); }
+    .portal-card .ripple{
+      position:absolute; border-radius:50%; pointer-events:none; transform: scale(0);
+      background: var(--glow); opacity:.25; animation: portal-ripple .6s ease-out forwards;
+    }
+    @keyframes portal-ripple{ to{ transform: scale(12); opacity:0; } }
+
+    /* ---------- Universal button glow + ripple ---------- */
+    .btn{
+      position:relative; overflow:hidden;
+      transition: transform .18s ease, box-shadow .18s ease;
+      --btn-glow: rgba(13,110,253,.55);
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,0,0,.10), 0 0 0 1px var(--btn-glow), 0 0 22px var(--btn-glow); }
+    .btn:active{ transform: translateY(0); box-shadow:none; }
+    .btn-primary, .btn-outline-primary{ --btn-glow: rgba(13,110,253,.55); }
+    .btn-success, .btn-outline-success{ --btn-glow: rgba(25,135,84,.55); }
+    .btn-info, .btn-outline-info{ --btn-glow: rgba(13,202,240,.55); }
+    .btn-danger, .btn-outline-danger{ --btn-glow: rgba(220,53,69,.55); }
+    .btn-warning, .btn-outline-warning{ --btn-glow: rgba(255,193,7,.55); }
+    .btn-secondary, .btn-outline-secondary{ --btn-glow: rgba(108,117,125,.55); }
+    .btn-dark, .btn-outline-dark{ --btn-glow: rgba(33,37,41,.70); }
+    .btn-light, .btn-outline-light{ --btn-glow: rgba(200,200,200,.55); }
+    .btn .ripple{
+      position:absolute; border-radius:50%; pointer-events:none;
+      transform:scale(0); background: var(--btn-glow); opacity:.28; animation: btn-ripple .55s ease-out forwards;
+    }
+    @keyframes btn-ripple{ to{ transform:scale(10); opacity:0; } }
+
+    @media (prefers-reduced-motion: reduce){
+      .portal-card, .portal-card::before, .portal-icon, .portal-icon::after,
+      .btn, .navbar, .panel-white, .instructions-block, .hero, .brand-badge{ transition:none !important; }
+    }
+
+    /* === Spacing + title banner removal (keeps logo fully visible) === */
+.hero{
+  /* push "Welcome To", main title, and tagline down below the logo */
+  padding-top: 180px; /* was ~96px */
+}
+
+/* remove the dark banner block behind the main title */
+.hero .title{
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0;                 /* slimmer line height */
+}
+
+/* optional: a little breathing room for the tagline */
+.hero .tag{ margin-top: 10px; }
+
   </style>
+
 </head>
 <body>
 
@@ -102,8 +277,14 @@
     {% endif %}
   {% endwith %}
 
-  <!-- HERO -->
+  <!-- HERO (redesigned) -->
   <header class="hero">
+    <!-- Brand badge now shows your app icon (place it at static/img/eapas-logo.png) -->
+    <div class="brand-badge" id="brandBadge">
+      <img id="brandLogo" src="{{ url_for('static', filename='images/eapas-logo.png') }}" alt="EAPAS Logo"
+           onerror="this.style.display='none'; this.parentElement.classList.add('no-img');">
+    </div>
+
     <div class="kicker">Welcome To</div>
     <h1 class="title">Employee Attrition Predictor &amp; Appraisal System</h1>
     <div class="tag">Role-based HR platform that blends performance management with machine-learning attrition insights</div>
@@ -116,8 +297,11 @@
         <div class="panel-white">
           <div class="panel-heading">What this system is</div>
           <p>
-            A role-aware application for Employees, Managers, HR, and Admins. It predicts attrition risk,
-            streamlines appraisal workflows, and surfaces HR analytics so you can act early and fairly.
+            This system uses machine learning to estimate each employee’s attrition risk (how likely they are to stay or leave the organization).
+            Alongside that, it also runs the performance appraisal process (submissions, reviews, approvals).
+            When HR completes an appraisal and the HR Committee (HRC) makes its final decision (e.g., promotion, performance rating, improvement plan),
+            that outcome is fed back into the Machine Learning model as one of the inputs. The model combines this HRC decision with other employee details such as tenure,
+            department, overtime, past ratings, attendance, salary band, etc. to produce an updated attrition level (low/high or a probability).
           </p>
         </div>
       </div>
@@ -146,7 +330,6 @@
     </ol>
 
     <div class="portal-grid">
-      <!-- make sure these are type="button" so no stray form submits anywhere -->
       <div class="portal-card">
         <div class="portal-icon bg-primary-subtle text-primary"><i class="bi bi-person-badge"></i></div>
         <h6>Employee Portal</h6>
@@ -210,125 +393,92 @@
   </div>
 
   <!-- SIGN-UP MODAL (unchanged) -->
-  <!-- SIGN-UP MODAL -->
-<div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-secondary text-white">
-        <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Create your account</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form class="needs-validation" method="POST" action="{{ url_for('register') }}" novalidate>
-
-          {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Username</label>
-              <input type="text" name="username" class="form-control" required autocomplete="username">
-              <div class="invalid-feedback">Username is required.</div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Email</label>
-              <input type="email" name="email" class="form-control" required autocomplete="email">
-              <div class="invalid-feedback">Valid email is required.</div>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">Password</label>
-              <div class="input-group">
-                <input id="pw1" type="password" name="password" class="form-control" required autocomplete="new-password" minlength="12">
-                <button id="togglePw1" class="btn btn-outline-secondary" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
+  <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-secondary text-white">
+          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Create your account</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form class="needs-validation" method="POST" action="{{ url_for('register') }}" novalidate>
+            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" required autocomplete="username">
+                <div class="invalid-feedback">Username is required.</div>
               </div>
-              <div class="progress mt-2" style="height:6px;">
-                <div id="pwStrength" class="progress-bar" style="width:0%"></div>
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" required autocomplete="email">
+                <div class="invalid-feedback">Valid email is required.</div>
               </div>
-              <small id="pwHint" class="text-muted">Use 12+ chars with upper, lower, number, symbol.</small>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">Confirm Password</label>
-              <div class="input-group">
-                <input id="pw2" name="confirm_password" type="password" class="form-control" required autocomplete="new-password" minlength="12">
-
-                <button id="togglePw2" class="btn btn-outline-secondary" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
+              <div class="col-md-6">
+                <label class="form-label">Password</label>
+                <div class="input-group">
+                  <input id="pw1" type="password" name="password" class="form-control" required autocomplete="new-password" minlength="12">
+                  <button id="togglePw1" class="btn btn-outline-secondary" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
+                </div>
+                <div class="progress mt-2" style="height:6px;"><div id="pwStrength" class="progress-bar" style="width:0%"></div></div>
+                <small id="pwHint" class="text-muted">Use 12+ chars with upper, lower, number, symbol.</small>
               </div>
-              <div class="invalid-feedback">Passwords must match.</div>
+              <div class="col-md-6">
+                <label class="form-label">Confirm Password</label>
+                <div class="input-group">
+                  <input id="pw2" name="confirm_password" type="password" class="form-control" required autocomplete="new-password" minlength="12">
+                  <button id="togglePw2" class="btn btn-outline-secondary" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
+                </div>
+                <div class="invalid-feedback">Passwords must match.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Role</label>
+                <select id="signupRoleSelect" name="role" class="form-select" required>
+                  <option value="" disabled selected>Choose…</option>
+                  <option value="EMPLOYEE">Employee</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="HR">HR</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+                <div class="invalid-feedback">Please pick a role.</div>
+              </div>
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label">Role</label>
-              <select id="signupRoleSelect" name="role" class="form-select" required>
-                <option value="" disabled selected>Choose…</option>
-                <option value="EMPLOYEE">Employee</option>
-                <option value="MANAGER">Manager</option>
-                <option value="HR">HR</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-              <div class="invalid-feedback">Please pick a role.</div>
-            </div>
-          </div>
-
-          <!-- Employee-only details (auto-requires when role=EMPLOYEE) -->
-          <div id="employeeFields" class="mt-3 d-none">
-            <div class="border rounded p-3">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Full Name</label>
-                  <input type="text" name="name" class="form-control">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Employee ID</label>
-                  <input type="text" name="employee_id" class="form-control">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Department</label>
-                  <input type="text" name="department" class="form-control">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Job Title</label>
-                  <input type="text" name="title" class="form-control">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Manager Name</label>
-                  <input type="text" name="manager_name" class="form-control">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Phone</label>
-                  <input type="text" name="phone" class="form-control">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Location</label>
-                  <input type="text" name="location" class="form-control" placeholder="City, Country">
+            <div id="employeeFields" class="mt-3 d-none">
+              <div class="border rounded p-3">
+                <div class="row g-3">
+                  <div class="col-md-6"><label class="form-label">Full Name</label><input type="text" name="name" class="form-control"></div>
+                  <div class="col-md-6"><label class="form-label">Employee ID</label><input type="text" name="employee_id" class="form-control"></div>
+                  <div class="col-md-6"><label class="form-label">Department</label><input type="text" name="department" class="form-control"></div>
+                  <div class="col-md-6"><label class="form-label">Job Title</label><input type="text" name="title" class="form-control"></div>
+                  <div class="col-md-6"><label class="form-label">Manager Name</label><input type="text" name="manager_name" class="form-control"></div>
+                  <div class="col-md-6"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control"></div>
+                  <div class="col-12"><label class="form-label">Location</label><input type="text" name="location" class="form-control" placeholder="City, Country"></div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="form-check mt-3">
-            <input id="agree" class="form-check-input" type="checkbox" required>
-            <label class="form-check-label" for="agree">I agree to the Terms & Privacy Policy</label>
-            <div class="invalid-feedback">You must agree before submitting.</div>
-          </div>
+            <div class="form-check mt-3">
+              <input id="agree" class="form-check-input" type="checkbox" required>
+              <label class="form-check-label" for="agree">I agree to the Terms & Privacy Policy</label>
+              <div class="invalid-feedback">You must agree before submitting.</div>
+            </div>
 
-          <div class="d-flex gap-2 mt-3">
-            <button type="submit" class="btn btn-primary w-100">Create Account</button>
-            <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Cancel</button>
-          </div>
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary w-100">Create Account</button>
+              <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Cancel</button>
+            </div>
 
-          <!-- Optional demo fillers hook your JS already supports -->
-          <div id="demoFillers" class="mt-3 d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-primary" data-fill="employee">Demo: Employee</button>
-            <button type="button" class="btn btn-sm btn-outline-success" data-fill="manager">Demo: Manager</button>
-            <button type="button" class="btn btn-sm btn-outline-info" data-fill="hr">Demo: HR</button>
-          </div>
-        </form>
+            <div id="demoFillers" class="mt-3 d-flex gap-2">
+              <button type="button" class="btn btn-sm btn-outline-primary" data-fill="employee">Demo: Employee</button>
+              <button type="button" class="btn btn-sm btn-outline-success" data-fill="manager">Demo: Manager</button>
+              <button type="button" class="btn btn-sm btn-outline-info" data-fill="hr">Demo: HR</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-</div>
-
 
   <footer>
     <small>&copy; 2025 Employee Attrition Prediction. All rights reserved.</small>
@@ -353,20 +503,13 @@
       header.className = 'modal-header text-white ' + preset.header;
       const btn = document.getElementById('loginSubmitBtn');
       btn.className = 'btn w-100 ' + preset.btn;
-      // remember last chosen role for reliability
       sessionStorage.setItem('lastRole', role);
     }
 
-    // When you click a portal button, set role immediately
     document.querySelectorAll('[data-role]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const r = btn.getAttribute('data-role') || 'EMPLOYEE';
-        applyRole(r);
-      });
+      btn.addEventListener('click', () => applyRole(btn.getAttribute('data-role') || 'EMPLOYEE'));
     });
 
-    // When modal is about to show (e.g., opened via ?open=login_admin),
-    // pick role from the button that triggered it or from sessionStorage fallback.
     document.getElementById('loginModal')?.addEventListener('show.bs.modal', (ev) => {
       const r = ev.relatedTarget?.getAttribute?.('data-role')
              || (new URLSearchParams(location.search).get('open') || '').split('_')[1]?.toUpperCase()
@@ -375,7 +518,7 @@
       applyRole(r);
     });
 
-    // ---------- Sign-up helpers (unchanged) ----------
+    // Signup helpers (unchanged)
     (function(){
       const form = document.querySelector('#signupModal form.needs-validation');
       const pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
@@ -418,7 +561,7 @@
       });
     })();
 
-    // ---------- Demo autofill (unchanged) ----------
+    // Demo autofill (unchanged)
     (function(){
       const samples = {
         employee: { username:"evelyn.park", email:"evelyn.park@acme.com", password:"EPark#2025!", role:"EMPLOYEE", agree:true,
@@ -445,7 +588,7 @@
       document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>btn.addEventListener('click',()=>fillSample(btn.dataset.fill)));
     })();
 
-    // ---------- Auto-open via ?open=... ----------
+    // Auto-open via ?open=...
     (function () {
       const params = new URLSearchParams(location.search);
       const open = params.get('open');
@@ -467,6 +610,52 @@
         modal('loginModal').show();
       }
       history.replaceState(null, '', location.pathname + (location.hash || ''));
+    })();
+
+    // Interactive glow for blocks & buttons (and navbar)
+    (function(){
+      const blocks = document.querySelectorAll('.navbar, .panel-white, .instructions-block, .portal-grid .portal-card');
+      blocks.forEach(el=>{
+        el.addEventListener('pointermove', (e)=>{
+          const r = el.getBoundingClientRect();
+          el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+          el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
+      });
+
+      // Make portal card entire area clickable, with ripple
+      document.querySelectorAll('.portal-grid .portal-card').forEach(card=>{
+        const cta = card.querySelector('button[data-bs-toggle="modal"]');
+        card.tabIndex = 0;
+        card.addEventListener('click', (e)=>{ if (!e.target.closest('button')) cta?.click(); });
+        card.addEventListener('keydown', (e)=>{ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); cta?.click(); }});
+        card.addEventListener('pointerdown', (e)=>{
+          const r = card.getBoundingClientRect();
+          const s = document.createElement('span');
+          const size = Math.max(r.width, r.height);
+          s.className = 'ripple';
+          s.style.width = s.style.height = size + 'px';
+          s.style.left = (e.clientX - r.left - size/2) + 'px';
+          s.style.top  = (e.clientY - r.top  - size/2) + 'px';
+          card.appendChild(s);
+          setTimeout(()=>s.remove(), 700);
+        });
+      });
+
+      // Button ripple
+      document.addEventListener('pointerdown', (e)=>{
+        const btn = e.target.closest('.btn');
+        if(!btn) return;
+        const r = btn.getBoundingClientRect();
+        const s = document.createElement('span');
+        const size = Math.max(r.width, r.height);
+        s.className = 'ripple';
+        s.style.width = s.style.height = size + 'px';
+        s.style.left = (e.clientX - r.left - size/2) + 'px';
+        s.style.top  = (e.clientY - r.top  - size/2) + 'px';
+        btn.appendChild(s);
+        setTimeout(()=>s.remove(), 600);
+      });
     })();
   </script>
 </body>

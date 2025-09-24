@@ -67,25 +67,15 @@
       </div>
     </div>
 
-    <div class="card soft mb-3">
-      <div class="card-body">
-        <h6 class="mb-2">Comments</h6>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="text-muted small">Employee</div>
-            <div>{{ a.employee_comment or '—' }}</div>
-          </div>
-          <div class="col-md-6">
-            <div class="text-muted small">Supervisor</div>
-            <div>{{ a.supervisor_comment or '—' }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <form method="POST" class="d-flex gap-2">
-      <button name="action" value="approve" class="btn btn-success"><i class="bi bi-check2-circle"></i> Approve</button>
-      <button name="action" value="reject"  class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> Reject</button>
+      <!-- CSRF token added -->
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" name="action" value="approve" class="btn btn-success">
+        <i class="bi bi-check2-circle"></i> Approve
+      </button>
+      <button type="submit" name="action" value="reject" class="btn btn-outline-danger">
+        <i class="bi bi-x-circle"></i> Reject
+      </button>
       <a href="{{ url_for('appraisal.hr_review_queue_ui') }}" class="btn btn-outline-secondary">Close</a>
     </form>
   </div>
