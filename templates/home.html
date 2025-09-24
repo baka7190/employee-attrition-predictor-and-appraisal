@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Employee Attrition Prediction</title>
 
   <!-- Bootstrap & Icons -->
@@ -20,6 +20,8 @@
       --hero-btm:#0e3f53;       /* bottom gradient */
       --panel-border:#0e1720;
       --note-bg:#eef2f7;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
     }
     @font-face{
       font-family:"Billion Dreams";
@@ -29,139 +31,113 @@
       font-display:swap;
     }
 
+    /* Base */
+    html{ scroll-behavior:smooth; }
     body{ margin:0; background:#fff; color:#111;
       font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+    img{ max-width:100%; height:auto; }
 
-    /* ---------- Topbar (unchanged, with subtle glow on hover) ---------- */
+    /* ---------- Topbar (mobile-friendly) ---------- */
     .navbar{
-      background:#fff; border:1px solid #dfe3ea; border-radius:6px;
-      margin:16px 16px 0; padding:6px 10px;
-      position:relative; isolation:isolate;
+      background:#fff; border:1px solid #dfe3ea; border-radius:10px;
+      margin:16px 16px 0; padding:8px 12px; position:relative; isolation:isolate;
       --block-glow: rgba(13,110,253,.25);
       transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
     }
-    .navbar::before{
-      content:''; position:absolute; inset:-2px; border-radius:8px; z-index:-1;
+    .navbar::before{ content:''; position:absolute; inset:-2px; border-radius:12px; z-index:-1;
       background: radial-gradient(160px 160px at var(--mx,50%) var(--my,0%), var(--block-glow), transparent 60%) no-repeat;
-      opacity:0; filter:blur(10px); transition:opacity .25s ease;
-    }
+      opacity:0; filter:blur(10px); transition:opacity .25s ease; }
     .navbar:hover{ box-shadow:0 8px 24px rgba(0,0,0,.08), 0 0 0 1px var(--block-glow); border-color:transparent; }
     .navbar:hover::before{ opacity:1; }
+    .navbar .container-fluid{ flex-wrap:wrap; gap:8px; }
+    .navbar strong{ font-size:1rem; }
 
-    /* ---------- HERO (redesigned blue part + logo badge) ---------- */
+    /* For very small screens, make the action button full-width */
+    @media (max-width: 576px){
+      .navbar .ms-auto{ width:100%; display:flex; gap:8px; }
+      .navbar .ms-auto .btn{ flex:1 1 auto; }
+    }
+
+    /* ---------- HERO (responsive) ---------- */
     .hero{
-      position:relative; overflow:hidden;
-      color:#fff;
-      border:1px solid #0b1325; border-radius:12px;
-      margin:10px 16px 16px; padding:96px 16px 84px; min-height:380px; text-align:center;
+      position:relative; overflow:hidden; color:#fff;
+      border:1px solid #0b1325; border-radius:14px; margin:12px 16px 16px;
+      padding:calc(96px + var(--safe-top)) 16px 84px; min-height:360px; text-align:center;
       background:
         radial-gradient(900px 380px at 50% -30%, rgba(255,255,255,.08), transparent 60%),
         linear-gradient(180deg, var(--hero-top) 0%, var(--hero-mid) 55%, var(--hero-btm) 100%);
     }
-    .hero::before{
-      content:""; position:absolute; inset:auto -10% 35% -10%; height:45%;
-      background: linear-gradient( to right, rgba(255,255,255,.08), rgba(255,255,255,0) 55%),
+    .hero::before{ content:""; position:absolute; inset:auto -10% 35% -10%; height:45%;
+      background: linear-gradient(to right, rgba(255,255,255,.08), rgba(255,255,255,0) 55%),
                   linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.0));
-      transform: skewY(-5deg);
-      pointer-events:none;
-    }
-    .hero::after{
-      content:""; position:absolute; left:-5%; right:-5%; bottom:-1px; height:120px;
-      background:
-        radial-gradient(1200px 120px at 50% 0, rgba(255,255,255,.12), transparent 70%),
-        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,0));
-      filter: blur(2px);
-      pointer-events:none;
-    }
+      transform: skewY(-5deg); pointer-events:none; }
+    .hero::after{ content:""; position:absolute; left:-5%; right:-5%; bottom:-1px; height:120px;
+      background: radial-gradient(1200px 120px at 50% 0, rgba(255,255,255,.12), transparent 70%),
+                  linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,0));
+      filter: blur(2px); pointer-events:none; }
 
-    /* === Brand badge (square, shows real app icon) === */
-    .brand-badge{
-      --size: 156px;
-      width:var(--size); height:var(--size);
+    /* Brand badge: scale with screen, keep tap-safe spacing */
+    .brand-badge{ --size: clamp(96px, 22vw, 156px); width:var(--size); height:var(--size);
       position:absolute; left:50%; top:18px; transform:translateX(-50%);
-      border-radius:24px;
-      background: transparent; border:0;
+      border-radius:22px; background:transparent; border:0;
       box-shadow: 0 10px 25px rgba(0,0,0,.25), 0 0 0 6px rgba(13,202,240,.08), 0 0 40px rgba(13,202,240,.30);
-      display:grid; place-items:center;
-      padding:0; isolation:isolate;
-    }
-    .brand-badge img{
-      width:100%; height:100%; object-fit:contain; display:block;
-      border-radius:24px;
-      filter:none;
-    }
-    .brand-badge.no-img::after{
-      content:"LOGO"; color:#fff; opacity:.75; font-weight:700; letter-spacing:.06em;
+      display:grid; place-items:center; padding:0; isolation:isolate; }
+    .brand-badge img{ width:100%; height:100%; object-fit:contain; border-radius:22px; display:block; }
+    .brand-badge.no-img::after{ content:"LOGO"; color:#fff; opacity:.75; font-weight:700; letter-spacing:.06em; }
+
+    .hero .kicker{ font-family:"Billion Dreams","Pacifico",cursive; font-size:clamp(18px,2.2vw,26px); line-height:1.15; margin:calc(34px + var(--size)) 0 8px; }
+    .hero .title{ font-family:"Poppins",sans-serif; text-transform:uppercase; letter-spacing:.02em; font-weight:700;
+      font-size:clamp(20px,4.2vw,40px); margin:0 auto 10px; max-width:1100px; padding:0; background:transparent; box-shadow:none; }
+    .hero .tag{ font-family:"Pristina","Billion Dreams","Pacifico",cursive; font-size:clamp(14px,1.8vw,18px); line-height:1.35; opacity:.95; margin-top:8px; }
+
+    /* Compact hero on very small phones */
+    @media (max-width: 400px){
+      .hero{ padding-top:calc(72px + var(--safe-top)); min-height:300px; }
+      .hero .kicker{ margin-top:calc(24px + var(--size)); }
     }
 
-    .hero .kicker{ font-family:"Billion Dreams","Pacifico",cursive; font-size:clamp(18px,2.2vw,26px); line-height:1.15; margin:54px 0 10px; }
-    .hero .title{
-      font-family:"Poppins",sans-serif; text-transform:uppercase; letter-spacing:.02em; font-weight:700;
-      font-size:clamp(20px,4.2vw,40px); margin:0 auto 14px; max-width:1100px;
-      padding:10px 14px; border-radius:10px;
-      background:rgba(6,28,40,.36); backdrop-filter:saturate(140%) blur(2px);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-    }
-    .hero .tag{
-      font-family:"Pristina","Billion Dreams","Pacifico",cursive;
-      font-size:clamp(14px,1.8vw,18px); line-height:1.25; opacity:.92;
-    }
-
-    /* ---------- Panels / blocks (unchanged but interactive) ---------- */
+    /* ---------- Panels / blocks ---------- */
     .panels-wrap{ margin:0 16px 8px; }
-    .panel-white{ background:#fff; border:2px solid var(--panel-border); border-radius:4px; min-height:160px; padding:12px 16px 14px; }
+    .panel-white{ background:#fff; border:2px solid var(--panel-border); border-radius:8px; min-height:160px; padding:14px 16px; }
     .panel-white,
-    .instructions-block{
-      position:relative; isolation:isolate;
-      --block-glow: rgba(13,110,253,.22);
-      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .25s ease;
-    }
+    .instructions-block{ position:relative; isolation:isolate; --block-glow: rgba(13,110,253,.22);
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .25s ease; }
     .panel-white::before,
-    .instructions-block::before{
-      content:''; position:absolute; inset:-2px; border-radius:8px; z-index:-1;
+    .instructions-block::before{ content:''; position:absolute; inset:-2px; border-radius:10px; z-index:-1;
       background: radial-gradient(180px 180px at var(--mx,50%) var(--my,0%), var(--block-glow), transparent 62%) no-repeat;
-      opacity:0; filter:blur(12px); transition:opacity .25s ease;
-    }
+      opacity:0; filter:blur(12px); transition:opacity .25s ease; }
     .panel-white:hover,
-    .instructions-block:hover{
-      transform: translateY(-4px);
-      border-color: transparent;
-      box-shadow: 0 14px 32px rgba(0,0,0,.12), 0 0 0 1px var(--block-glow), 0 0 34px var(--block-glow);
-    }
+    .instructions-block:hover{ transform: translateY(-4px); border-color: transparent;
+      box-shadow: 0 14px 32px rgba(0,0,0,.12), 0 0 0 1px var(--block-glow), 0 0 34px var(--block-glow); }
     .panel-white:hover::before,
     .instructions-block:hover::before{ opacity:1; }
 
-    .two-panels{ display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+    .two-panels{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
     @media (max-width: 992px){ .two-panels{ grid-template-columns:1fr; } }
     .two-panels > .panel-cell{ display:flex; }
     .two-panels > .panel-cell .panel-white{ display:flex; flex-direction:column; height:100%; }
 
     .panel-heading{ font-family:"Poppins",sans-serif; text-transform:uppercase; font-weight:700; font-size:clamp(14px,2vw,18px); text-align:center; margin-bottom:8px; }
-    .panel-white p{ color:#344054; margin-bottom:.6rem; }
+    .panel-white p{ color:#344054; margin-bottom:.6rem; line-height:1.6; }
     .panel-white ul{ margin:.25rem 0 .5rem 1.25rem; }
-    .panel-white li{ color:#344054; }
+    .panel-white li{ color:#344054; margin:.25rem 0; }
 
-    .instructions-block{
-      margin:14px 16px 0; background:var(--note-bg); border:1px solid #cfd6df; border-radius:6px; padding:10px 12px 0;
-      --block-glow: rgba(13,202,240,.28);
-    }
+    /* ---------- Instructions + Portals (mobile grid) ---------- */
+    .instructions-block{ margin:14px 16px 8px; background:var(--note-bg); border:1px solid #cfd6df; border-radius:10px; padding:12px 12px 0; --block-glow: rgba(13,202,240,.28); }
     .instructions-block .leadline{ font-weight:600; }
     .instructions-block ol{ margin:6px 0 10px 20px; color:#334155; font-size:14px; }
-    .portal-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; padding:12px 6px 16px; }
+
+    .portal-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; padding:12px 6px 16px; }
     @media (max-width: 992px){ .portal-grid{ grid-template-columns:repeat(2,1fr);} }
     @media (max-width: 576px){ .portal-grid{ grid-template-columns:1fr;} }
-    .portal-card{ background:#fff; border:1px solid #e6e9ee; border-radius:12px; padding:18px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.04); }
+    .portal-card{ background:#fff; border:1px solid #e6e9ee; border-radius:14px; padding:18px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.04); }
     .portal-icon{ display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; margin:0 auto 10px; font-size:28px; }
-    footer{ border-top:1px solid #e7eaf0; margin:10px 16px; padding:8px 0 16px; color:#6b7280; text-align:center; }
+    .portal-card p{ margin:0 0 10px; font-size:.95rem; color:#475569; }
+
+    footer{ border-top:1px solid #e7eaf0; margin:10px 16px; padding:8px 0 calc(16px + var(--safe-bottom)); color:#6b7280; text-align:center; }
 
     /* ---------- Portal cards fancy hover ---------- */
-    .portal-card{
-      position: relative;
-      isolation: isolate;
-      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .25s ease;
-      cursor: pointer;
-      --glow: rgba(13,110,253,.55); /* default (Employee blue) */
-    }
+    .portal-card{ position: relative; isolation: isolate; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .25s ease; cursor: pointer; --glow: rgba(13,110,253,.55); }
     .portal-card:has(.btn-success){ --glow: rgba(25,135,84,.55); }
     .portal-card:has(.btn-info){    --glow: rgba(13,202,240,.55); }
     .portal-card:has(.btn-dark){    --glow: rgba(33,37,41,.70); }
@@ -170,41 +146,21 @@
       .portal-grid .portal-card:nth-child(3){ --glow: rgba(13,202,240,.55); }
       .portal-grid .portal-card:nth-child(4){ --glow: rgba(33,37,41,.70); }
     }
-    .portal-card::before{
-      content:'';
-      position:absolute; inset:-2px; border-radius:12px;
-      background: radial-gradient(140px 140px at var(--mx,50%) var(--my,0%), var(--glow), transparent 60%) no-repeat;
-      opacity:0; filter: blur(8px); transition: opacity .25s ease; z-index:-1;
-    }
-    .portal-card:hover{
-      transform: translateY(-6px) scale(1.01);
-      border-color: transparent;
-      box-shadow: 0 12px 30px rgba(0,0,0,.14), 0 0 0 1.5px var(--glow), 0 0 36px var(--glow);
-    }
+    .portal-card::before{ content:''; position:absolute; inset:-2px; border-radius:14px; background: radial-gradient(140px 140px at var(--mx,50%) var(--my,0%), var(--glow), transparent 60%) no-repeat; opacity:0; filter: blur(8px); transition: opacity .25s ease; z-index:-1; }
+    .portal-card:hover{ transform: translateY(-6px) scale(1.01); border-color: transparent; box-shadow: 0 12px 30px rgba(0,0,0,.14), 0 0 0 1.5px var(--glow), 0 0 36px var(--glow); }
     .portal-card:hover::before{ opacity:1; }
     .portal-icon{ position: relative; transition: transform .25s ease, box-shadow .25s ease; }
     .portal-card:hover .portal-icon{ transform: translateY(-2px) scale(1.06); }
-    .portal-icon::after{
-      content:''; position:absolute; inset:-8px; border-radius:50%;
-      box-shadow: 0 0 0 0 var(--glow), inset 0 0 0 rgba(255,255,255,0);
-      opacity:0; transition: all .3s ease;
-    }
+    .portal-icon::after{ content:''; position:absolute; inset:-8px; border-radius:50%; box-shadow: 0 0 0 0 var(--glow), inset 0 0 0 rgba(255,255,255,0); opacity:0; transition: all .3s ease; }
     .portal-card:hover .portal-icon::after{ opacity:.95; box-shadow: 0 0 24px 6px var(--glow), inset 0 0 18px rgba(255,255,255,.45); }
     .portal-card h6{ transition: color .2s ease; }
     .portal-card:hover h6{ color:#0b1325; }
     .portal-card:focus-visible{ outline:none; transform: translateY(-6px); box-shadow: 0 0 0 3px var(--glow), 0 12px 30px rgba(0,0,0,.16); }
-    .portal-card .ripple{
-      position:absolute; border-radius:50%; pointer-events:none; transform: scale(0);
-      background: var(--glow); opacity:.25; animation: portal-ripple .6s ease-out forwards;
-    }
+    .portal-card .ripple{ position:absolute; border-radius:50%; pointer-events:none; transform: scale(0); background: var(--glow); opacity:.25; animation: portal-ripple .6s ease-out forwards; }
     @keyframes portal-ripple{ to{ transform: scale(12); opacity:0; } }
 
     /* ---------- Universal button glow + ripple ---------- */
-    .btn{
-      position:relative; overflow:hidden;
-      transition: transform .18s ease, box-shadow .18s ease;
-      --btn-glow: rgba(13,110,253,.55);
-    }
+    .btn{ position:relative; overflow:hidden; transition: transform .18s ease, box-shadow .18s ease; --btn-glow: rgba(13,110,253,.55); }
     .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,0,0,.10), 0 0 0 1px var(--btn-glow), 0 0 22px var(--btn-glow); }
     .btn:active{ transform: translateY(0); box-shadow:none; }
     .btn-primary, .btn-outline-primary{ --btn-glow: rgba(13,110,253,.55); }
@@ -215,42 +171,36 @@
     .btn-secondary, .btn-outline-secondary{ --btn-glow: rgba(108,117,125,.55); }
     .btn-dark, .btn-outline-dark{ --btn-glow: rgba(33,37,41,.70); }
     .btn-light, .btn-outline-light{ --btn-glow: rgba(200,200,200,.55); }
-    .btn .ripple{
-      position:absolute; border-radius:50%; pointer-events:none;
-      transform:scale(0); background: var(--btn-glow); opacity:.28; animation: btn-ripple .55s ease-out forwards;
-    }
+    .btn .ripple{ position:absolute; border-radius:50%; pointer-events:none; transform:scale(0); background: var(--btn-glow); opacity:.28; animation: btn-ripple .55s ease-out forwards; }
     @keyframes btn-ripple{ to{ transform:scale(10); opacity:0; } }
 
+    /* Motion preferences */
     @media (prefers-reduced-motion: reduce){
       .portal-card, .portal-card::before, .portal-icon, .portal-icon::after,
       .btn, .navbar, .panel-white, .instructions-block, .hero, .brand-badge{ transition:none !important; }
+      .portal-card:hover, .navbar:hover{ transform:none !important; box-shadow:none !important; }
     }
 
     /* === Spacing + title banner removal (keeps logo fully visible) === */
-.hero{
-  /* push "Welcome To", main title, and tagline down below the logo */
-  padding-top: 180px; /* was ~96px */
-}
+    .hero{ padding-top: 180px; }
+    .hero .title{ background: transparent !important; box-shadow: none !important; padding: 0; }
+    .hero .tag{ margin-top: 10px; }
 
-/* remove the dark banner block behind the main title */
-.hero .title{
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0;                 /* slimmer line height */
-}
-
-/* optional: a little breathing room for the tagline */
-.hero .tag{ margin-top: 10px; }
-
+    /* Utility: larger tap targets on mobile */
+    @media (max-width: 576px){
+      .btn{ padding:.85rem 1rem; font-size:1rem; }
+      .portal-card h6{ font-size:1rem; }
+      .panel-white{ padding:12px; }
+      .instructions-block ol{ font-size:.95rem; }
+    }
   </style>
-
 </head>
 <body>
 
   <!-- Topbar -->
   <nav class="navbar">
-    <div class="container-fluid p-0">
-      <div class="d-flex align-items-center gap-2">
+    <div class="container-fluid p-0 align-items-center">
+      <div class="d-flex align-items-center gap-2 flex-grow-1">
         <i class="bi bi-graph-up"></i>
         <strong>Employee Attrition Prediction</strong>
       </div>
@@ -277,9 +227,8 @@
     {% endif %}
   {% endwith %}
 
-  <!-- HERO (redesigned) -->
+  <!-- HERO -->
   <header class="hero">
-    <!-- Brand badge now shows your app icon (place it at static/img/eapas-logo.png) -->
     <div class="brand-badge" id="brandBadge">
       <img id="brandLogo" src="{{ url_for('static', filename='images/eapas-logo.png') }}" alt="EAPAS Logo"
            onerror="this.style.display='none'; this.parentElement.classList.add('no-img');">
@@ -298,10 +247,7 @@
           <div class="panel-heading">What this system is</div>
           <p>
             This system uses machine learning to estimate each employee’s attrition risk (how likely they are to stay or leave the organization).
-            Alongside that, it also runs the performance appraisal process (submissions, reviews, approvals).
-            When HR completes an appraisal and the HR Committee (HRC) makes its final decision (e.g., promotion, performance rating, improvement plan),
-            that outcome is fed back into the Machine Learning model as one of the inputs. The model combines this HRC decision with other employee details such as tenure,
-            department, overtime, past ratings, attendance, salary band, etc. to produce an updated attrition level (low/high or a probability).
+            Alongside that, it also runs the performance appraisal process (submissions, reviews, approvals). When HR completes an appraisal and the HR Committee (HRC) makes its final decision (e.g., promotion, performance rating, improvement plan), that outcome is fed back into the Machine Learning model as one of the inputs. The model combines this HRC decision with other employee details such as tenure, department, overtime, past ratings, attendance, salary band, etc. to produce an updated attrition level (low/high or a probability).
           </p>
         </div>
       </div>
@@ -360,9 +306,9 @@
     </div>
   </section>
 
-  <!-- Login MODAL -->
+  <!-- Login MODAL (fullscreen on small screens) -->
   <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
       <div class="modal-content">
         <div id="loginModalHeader" class="modal-header text-white bg-primary">
           <h5 class="modal-title">
@@ -376,7 +322,7 @@
             <input type="hidden" id="expected_role" name="expected_role" value="EMPLOYEE">
             <div class="mb-3">
               <label class="form-label">Username or Email</label>
-              <input type="text" name="identifier" class="form-control" required autocomplete="username">
+              <input type="text" name="identifier" class="form-control" required autocomplete="username" inputmode="email">
             </div>
             <div class="mb-3">
               <label class="form-label">Password</label>
@@ -392,9 +338,9 @@
     </div>
   </div>
 
-  <!-- SIGN-UP MODAL (unchanged) -->
+  <!-- SIGN-UP MODAL (fullscreen on small) -->
   <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header bg-secondary text-white">
           <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Create your account</h5>
@@ -411,7 +357,7 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Email</label>
-                <input type="email" name="email" class="form-control" required autocomplete="email">
+                <input type="email" name="email" class="form-control" required autocomplete="email" inputmode="email">
                 <div class="invalid-feedback">Valid email is required.</div>
               </div>
               <div class="col-md-6">
@@ -452,7 +398,7 @@
                   <div class="col-md-6"><label class="form-label">Department</label><input type="text" name="department" class="form-control"></div>
                   <div class="col-md-6"><label class="form-label">Job Title</label><input type="text" name="title" class="form-control"></div>
                   <div class="col-md-6"><label class="form-label">Manager Name</label><input type="text" name="manager_name" class="form-control"></div>
-                  <div class="col-md-6"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control"></div>
+                  <div class="col-md-6"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control" inputmode="tel"></div>
                   <div class="col-12"><label class="form-label">Location</label><input type="text" name="location" class="form-control" placeholder="City, Country"></div>
                 </div>
               </div>
@@ -469,7 +415,7 @@
               <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Cancel</button>
             </div>
 
-            <div id="demoFillers" class="mt-3 d-flex gap-2">
+            <div id="demoFillers" class="mt-3 d-flex gap-2 flex-wrap">
               <button type="button" class="btn btn-sm btn-outline-primary" data-fill="employee">Demo: Employee</button>
               <button type="button" class="btn btn-sm btn-outline-success" data-fill="manager">Demo: Manager</button>
               <button type="button" class="btn btn-sm btn-outline-info" data-fill="hr">Demo: HR</button>
@@ -518,7 +464,7 @@
       applyRole(r);
     });
 
-    // Signup helpers (unchanged)
+    // Signup helpers
     (function(){
       const form = document.querySelector('#signupModal form.needs-validation');
       const pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
@@ -561,7 +507,7 @@
       });
     })();
 
-    // Demo autofill (unchanged)
+    // Demo autofill
     (function(){
       const samples = {
         employee: { username:"evelyn.park", email:"evelyn.park@acme.com", password:"EPark#2025!", role:"EMPLOYEE", agree:true,
