@@ -1,0 +1,106 @@
+{# templates/partials/confirm_modal.html #}
+<div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <h6 class="modal-title">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Please confirm
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      {# Fallback lightweight form (used for link actions) #}
+      <form id="globalConfirmForm" method="post" action="">
+        <div class="modal-body">
+          <p id="globalConfirmText" class="mb-2">Are you sure?</p>
+          <div class="small text-muted">This action cannot be undone.</div>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger" id="globalConfirmDo">
+            <i class="bi bi-check2-circle"></i> Yes, continue
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const modalEl = document.getElementById('globalConfirmModal');
+  const confirmText = document.getElementById('globalConfirmText');
+  const confirmForm = document.getElementById('globalConfirmForm');
+  const bsModal = new bootstrap.Modal(modalEl);
+
+  // State: when confirming a native form submission
+  let pendingNativeForm = null;
+
+  /** Open modal with message; wire action/method if provided */
+  function openConfirm({ message, action = '', method = 'POST', nativeForm = null }) {
+    confirmText.textContent = message || 'Are you sure?';
+    pendingNativeForm = nativeForm;
+    if (nativeForm) {
+      // Native form mode: modal button just submits the original form
+      confirmForm.setAttribute('action', '');
+      confirmForm.setAttribute('method', 'post');
+    } else {
+      // Lightweight POST to an endpoint (e.g., for links)
+      confirmForm.setAttribute('action', action || '#');
+      confirmForm.setAttribute('method', (method || 'POST').toUpperCase());
+    }
+    bsModal.show();
+  }
+
+  // Intercept clicks on any element with [data-confirm]
+  document.addEventListener('click', (ev) => {
+    const trigger = ev.target.closest('[data-confirm]');
+    if (!trigger) return;
+
+    // If it's a submit button inside a form, let the submit listener handle it
+    if (trigger.closest('form') && trigger.type === 'submit') return;
+
+    ev.preventDefault();
+
+    const message = trigger.getAttribute('data-confirm') || 'Are you sure?';
+    const action  = trigger.getAttribute('data-action') || trigger.getAttribute('href') || '';
+    const method  = (trigger.getAttribute('data-method') || 'POST').toUpperCase();
+    const nativeForm = trigger.getAttribute('data-confirm-native') ? trigger.closest('form') : null;
+
+    openConfirm({ message, action, method, nativeForm });
+  });
+
+  // Intercept submits of any form with the class .needs-confirm
+  document.addEventListener('submit', (ev) => {
+    const form = ev.target;
+    if (!form.classList.contains('needs-confirm')) return;
+    ev.preventDefault();
+    const message = form.getAttribute('data-confirm') || 'Are you sure?';
+    openConfirm({ message, nativeForm: form });
+  });
+
+  // When the modal's confirm button is pressed
+  confirmForm.addEventListener('submit', (ev) => {
+    if (pendingNativeForm) {
+      ev.preventDefault();
+      // Ensure native form has CSRF input; if not, copy from modal
+      if (!pendingNativeForm.querySelector('input[name="csrf_token"]')) {
+        const tok = confirmForm.querySelector('input[name="csrf_token"]')?.value;
+        if (tok) {
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden'; hidden.name = 'csrf_token'; hidden.value = tok;
+          pendingNativeForm.appendChild(hidden);
+        }
+      }
+      bsModal.hide();
+      pendingNativeForm.submit();
+      pendingNativeForm = null;
+    } else {
+      // Lightweight form will submit as usual
+      bsModal.hide();
+    }
+  });
+})();
+</script>

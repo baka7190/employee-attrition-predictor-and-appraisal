@@ -18,12 +18,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import LogisticRegression
 
-import os, glob, json
+import os, glob, json, io
 import numpy as np
 import pandas as pd
 import joblib
 from datetime import datetime, date
 from io import BytesIO
+from functools import wraps
+from urllib.parse import urlparse, urljoin
 
 # Optional mail
 try:
@@ -87,9 +89,6 @@ def _verify_password(stored_hash_or_plain: str, provided: str) -> bool:
         pass
     # Fallback: legacy plaintext compare
     return stored_hash_or_plain == provided
-
-
-from sqlalchemy import or_
 
 def _purge_user_relations(user_id: int):
     """
@@ -203,6 +202,7 @@ app.jinja_env.globals['role_str'] = role_str
 
 @app.context_processor
 def inject_csrf_token():
+    # Provide a callable csrf_token() in templates
     return dict(csrf_token=generate_csrf)
 
 @app.context_processor
@@ -219,20 +219,12 @@ if os.getenv("AUTO_CREATE_DB", "1") == "1":
     with app.app_context():
         db.create_all()
 
-
-# app.py (or your routes file)
-from flask import request, redirect, url_for, flash
-from werkzeug.security import generate_password_hash
-from sqlalchemy import or_
-
 ALLOWED_ROLES = {"EMPLOYEE", "MANAGER", "HR", "ADMIN"}
 
 @app.post("/signup")
 def signup():
     # Forward old /signup posts to the canonical /register handler
     return redirect(url_for("register"))
-
-
 
 # ---------------- Admin bootstrap ----------------
 def bootstrap_admin():
@@ -263,10 +255,6 @@ def bootstrap_admin():
         db.session.rollback()
         app.logger.error("bootstrap_admin failed: %s", e)
 
-
-
-
-
 with app.app_context():
     bootstrap_admin()
 
@@ -275,21 +263,17 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# add near your other HR exports
-from flask import send_file
-import io
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
-
-from functools import wraps
-
+# ---------------- Role decorator ----------------
 def roles_required(*allowed_roles):
     """
     Usage: @roles_required("HR") or @roles_required("HR", "ADMIN")
     Ensures the current user has one of the allowed roles.
     """
-    # Normalize the role strings once
     normalized = {(_role_to_string(r) or "").strip().upper() for r in allowed_roles}
-
     def decorator(fn):
         @wraps(fn)
         @login_required
@@ -298,33 +282,17 @@ def roles_required(*allowed_roles):
             if role in normalized:
                 return fn(*args, **kwargs)
             flash("Access denied.", "danger")
-            # Send them to the closest matching login modal
             target = (next(iter(normalized)) or "EMPLOYEE").lower()
             return redirect(url_for("home", open=f"login_{target}"))
         return wrapper
     return decorator
 
-
-
-@app.route("/hr/export/pdf")
-@login_required
-@roles_required("HR")   # or whatever decorator you use
-def hr_export_pdf():
-    # TODO: replace with real PDF generation
-    buf = io.BytesIO()
-    buf.write(b"%PDF-1.4\n% Fake minimal PDF ...\n")  # placeholder
-    buf.seek(0)
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="hr_report.pdf",
-        mimetype="application/pdf"
-    )
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+# ---------------- Small helpers ----------------
+def _is_safe_next(target: str) -> bool:
+    if not target: return False
+    ref = urlparse(request.host_url)
+    test = urlparse(urljoin(request.host_url, target))
+    return (test.scheme in ("http", "https")) and (ref.netloc == test.netloc)
 
 # ---------------- Model / Encoder loading (safe) ----------------
 def _list_with_ids(pattern, prefix):
@@ -373,7 +341,6 @@ NUMERIC_COLS = [
     'YearsSinceLastPromotion','YearsWithCurrManager'
 ]
 try:
-    # Try models/columns.joblib first, then root
     cols_path = "models/columns.joblib" if os.path.exists("models/columns.joblib") else "columns.joblib"
     if os.path.exists(cols_path):
         cols = joblib.load(cols_path)
@@ -456,13 +423,6 @@ def home():
     return render_template("home.html")
 
 # ---------- Auth ----------
-from urllib.parse import urlparse, urljoin
-def _is_safe_next(target: str) -> bool:
-    if not target: return False
-    ref = urlparse(request.host_url)
-    test = urlparse(urljoin(request.host_url, target))
-    return (test.scheme in ("http", "https")) and (ref.netloc == test.netloc)
-
 @app.route("/login", methods=["GET", "POST"])
 @csrf.exempt
 def login():
@@ -595,7 +555,6 @@ def register():
         flash(msg, 'danger')
         return redirect(url_for('home', open='signup'))
 
-
 @app.teardown_request
 def _teardown_request(exc):
     # If the request raised, roll back so the connection isn't left aborted
@@ -609,7 +568,6 @@ def _teardown_request(exc):
         db.session.remove()
     except Exception:
         pass
-
 
 # ----- Account/Profile -----
 @account_bp.post('/profile/update')
@@ -1136,7 +1094,64 @@ def inject_notifications():
 
     return dict(notif_count=count, notif_items=items)
 
+# ===== Prediction history clearing (single source of truth) =====
+@app.post("/history/clear")
+@login_required
+def clear_my_predictions():
+    """
+    Delete only the current user's prediction history, then return to /history.
+    """
+    try:
+        Prediction.query.filter_by(user_id=current_user.id).delete(synchronize_session=False)
+        db.session.commit()
+        flash("Your prediction history has been cleared.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error clearing predictions: {e}", "danger")
+    # Always land back on history (stays on same page, now empty)
+    return redirect(url_for("prediction_history"))
 
+@app.post("/admin/clear_predictions")
+@login_required
+def clear_predictions():
+    """
+    Admin-only: clear ALL predictions system-wide.
+    """
+    if get_role(current_user) != "ADMIN":
+        flash("Access denied.", "danger")
+        return redirect(url_for("dashboard"))
+
+    try:
+        Prediction.query.delete(synchronize_session=False)
+        db.session.commit()
+        flash("All predictions have been cleared.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error clearing predictions: {e}", "danger")
+
+    # If the admin triggered this from History, send back there; otherwise to Admin dashboard.
+    if request.referrer and "/history" in request.referrer:
+        return redirect(url_for("prediction_history"))
+    return redirect(url_for("dashboard_admin"))
+
+@app.route('/delete_prediction/<int:prediction_id>', methods=['POST'])
+@login_required
+def delete_prediction(prediction_id):
+    """
+    Delete a single prediction. Owner can delete; HR/Admin can delete any.
+    """
+    try:
+        pred = Prediction.query.get_or_404(prediction_id)
+        if pred.user_id != current_user.id and get_role(current_user) not in {"ADMIN", "HR"}:
+            flash("You don’t have permission to delete this prediction.", "danger")
+            return redirect(url_for('prediction_history'))
+        db.session.delete(pred)
+        db.session.commit()
+        flash("Prediction deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting prediction: {e}", "danger")
+    return redirect(url_for("prediction_history"))
 
 # ----- Predict -----
 @app.route('/predict', methods=['GET', 'POST'])
@@ -1252,7 +1267,7 @@ def predict():
         recs = _recommendations(payload, top_drivers, bool(pred))
 
         result_ctx = {
-            "prediction_text": 'Employee will Attrit' if pred else 'Employee will NOT Attrit',
+            "prediction_text": 'The AI model predicts that the employee is likely to Leave.' if pred else 'The AI model predicts that the employee is likely to stay.',
             "probability": f"{proba*100:.1f}%",
             "pred": 'Yes' if pred else 'No',
             "proba": proba,
@@ -1291,7 +1306,6 @@ def save_retention_plan():
     # TODO: persist to your RetentionPlan model if/when ready
     flash("Retention plan saved (demo).", "success")
     return redirect(url_for("predict"))
-
 
 @app.route("/predict_form")
 @login_required
@@ -1372,36 +1386,6 @@ def dashboard_admin():
 
     return render_template("admin_dashboard.html", users=users, models=models, encoders=encoders, criteria=criteria)
 
-@app.route('/admin/clear_predictions', methods=['POST'])
-@login_required
-def clear_predictions():
-    if get_role(current_user) != "ADMIN":
-        flash("Access denied.", "danger")
-        return redirect(url_for("dashboard"))
-    try:
-        Prediction.query.delete()
-        db.session.commit()
-        flash("All predictions have been cleared.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error clearing predictions: {e}", "danger")
-    return redirect(url_for('dashboard_admin'))
-
-@app.route('/delete_prediction/<int:prediction_id>', methods=['POST'])
-@login_required
-def delete_prediction(prediction_id):
-    try:
-        pred = Prediction.query.get_or_404(prediction_id)
-        if pred.user_id != current_user.id and get_role(current_user) not in ["ADMIN", "HR"]:
-            flash("You don’t have permission to delete this prediction.", "danger")
-            return redirect(url_for('prediction_history'))
-        db.session.delete(pred); db.session.commit()
-        flash("Prediction deleted successfully.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error deleting prediction: {e}", "danger")
-    return redirect(url_for('prediction_history'))
-
 @app.route('/admin/create_user', methods=['POST'])
 @login_required
 def create_user():
@@ -1469,7 +1453,6 @@ def reject_user(user_id):
 
     return redirect(url_for('dashboard_admin'))
 
-
 @app.route('/admin/reset_password/<int:user_id>', methods=['POST'])
 @login_required
 def reset_user_password(user_id):
@@ -1514,7 +1497,6 @@ def delete_user(user_id):
 
     return redirect(request.referrer or url_for("dashboard_admin"))
 
-
 @app.route('/admin/delete_old_models', methods=['POST'])
 @login_required
 def delete_old_models():
@@ -1537,8 +1519,23 @@ def delete_old_models():
         flash(f"⚠️ Error deleting old models: {e}", "danger")
     return redirect(url_for('dashboard_admin'))
 
+# ----- HR export PDF sample -----
+@app.route("/hr/export/pdf")
+@login_required
+@roles_required("HR")
+def hr_export_pdf():
+    buf = io.BytesIO()
+    buf.write(b"%PDF-1.4\n% Fake minimal PDF ...\n")
+    buf.seek(0)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="hr_report.pdf",
+        mimetype="application/pdf"
+    )
+
+# ----- Run -----
 if __name__ == "__main__":
     debug = os.getenv("FLASK_DEBUG", "0") == "1"
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=debug)
-

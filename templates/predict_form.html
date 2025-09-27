@@ -132,8 +132,16 @@
             </div>
             <div class="card-body">
               <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-outline-primary chip" id="fillSample"><i class="bi bi-magic me-1"></i> Sample</button>
-                <button type="reset" class="btn btn-outline-secondary chip"><i class="bi bi-eraser me-1"></i> Clear</button>
+                <button type="button" class="btn btn-outline-primary chip" id="fillSample">
+                  <i class="bi bi-magic me-1"></i> Low Attrition
+                </button>
+                <!-- NEW: High Attrition quick-fill -->
+                <button type="button" class="btn btn-outline-danger chip" id="fillHighRisk">
+                  <i class="bi bi-exclamation-triangle me-1"></i> High Attrition
+                </button>
+                <button type="reset" class="btn btn-outline-secondary chip">
+                  <i class="bi bi-eraser me-1"></i> Clear
+                </button>
               </div>
             </div>
           </div>
@@ -628,9 +636,18 @@
       console.log('Submitting /predict (server-rendered result page)…');
     });
 
-    // Sample autofill (unchanged)
+    // Helper for quick-fill
+    function setField(name, value){
+      const el = form.elements[name];
+      if (!el) return;
+      el.value = value;
+      // Trigger change for any listeners
+      const evt = new Event('change', { bubbles:true });
+      el.dispatchEvent(evt);
+    }
+
+    // Sample autofill (balanced typical values)
     document.getElementById('fillSample').addEventListener('click', function () {
-      const set = (n,v)=>{const el=form.elements[n]; if(el) el.value=v;};
       const defaults = {
         Age: 36, DailyRate: 800, DistanceFromHome: 5, Education: 3, EnvironmentSatisfaction: 3,
         HourlyRate: 65, JobInvolvement: 3, JobLevel: 2, JobSatisfaction: 3, MonthlyIncome: 6500,
@@ -641,7 +658,46 @@
         JobRole: 'Sales Executive', Department: 'Sales', MaritalStatus: 'Married',
         Gender: 'Male', OverTime: 'No', BusinessTravel: 'Travel_Rarely', EducationField: 'Life Sciences'
       };
-      Object.entries(defaults).forEach(([k,v])=>set(k,v));
+      Object.entries(defaults).forEach(([k,v])=>setField(k,v));
+    });
+
+    // NEW: High Attrition quick-fill (values likely to increase attrition risk)
+    document.getElementById('fillHighRisk').addEventListener('click', function () {
+      const highRisk = {
+        Age: 23,
+        DailyRate: 300,
+        DistanceFromHome: 25,
+        Education: 2,
+        EnvironmentSatisfaction: 1,
+        HourlyRate: 25,
+        JobInvolvement: 2,
+        JobLevel: 1,
+        JobSatisfaction: 1,
+        MonthlyIncome: 3000,
+        MonthlyRate: 6000,
+        NumCompaniesWorked: 5,
+        PercentSalaryHike: 0,
+        PerformanceRating: 2,
+        RelationshipSatisfaction: 1,
+        StockOptionLevel: 0,
+        TotalWorkingYears: 2,
+        TrainingTimesLastYear: 0,
+        WorkLifeBalance: 1,
+        YearsAtCompany: 0.5,
+        YearsInCurrentRole: 0,
+        YearsSinceLastPromotion: 6,
+        YearsWithCurrManager: 0,
+        JobRole: 'Sales Representative',
+        Department: 'Sales',
+        MaritalStatus: 'Single',
+        Gender: 'Male',
+        OverTime: 'Yes',
+        BusinessTravel: 'Travel_Frequently',
+        EducationField: 'Other'
+      };
+      Object.entries(highRisk).forEach(([k,v])=>setField(k,v));
+      // Scroll to Predict to encourage action
+      document.getElementById('predictBtn')?.scrollIntoView({behavior:'smooth', block:'center'});
     });
   })();
 </script>

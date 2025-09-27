@@ -20,7 +20,6 @@
 <div class="container py-3">
   <div class="wrap">
 
-    <!-- Header + quick actions -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
       <h4 class="mb-0 d-flex align-items-center gap-2"><i class="bi bi-clipboard-check"></i> Team Appraisals</h4>
       <div class="d-flex gap-2">
@@ -31,7 +30,6 @@
       </div>
     </div>
 
-    {# derive counts by status #}
     {% set ns = namespace(pending=0, submitted=0, returned=0, finalized=0) %}
     {% for a in appraisals %}
       {% set S = a.status.name if a.status else 'DRAFT' %}
@@ -41,35 +39,13 @@
       {% if S in ['HR_REVIEWED','APPROVED'] %}{% set ns.finalized = ns.finalized + 1 %}{% endif %}
     {% endfor %}
 
-    <!-- KPIs -->
     <div class="row g-3 mb-3">
-      <div class="col-6 col-md-3">
-        <div class="card kpi soft"><div class="card-body">
-          <div class="sub">Needs Your Review</div>
-          <div class="value">{{ ns.pending }}</div>
-        </div></div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi soft"><div class="card-body">
-          <div class="sub">Awaiting HR (Submitted)</div>
-          <div class="value">{{ ns.submitted }}</div>
-        </div></div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi soft"><div class="card-body">
-          <div class="sub">Returned by HR</div>
-          <div class="value">{{ ns.returned }}</div>
-        </div></div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi soft"><div class="card-body">
-          <div class="sub">Finalized (Team)</div>
-          <div class="value">{{ ns.finalized }}</div>
-        </div></div>
-      </div>
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">Needs Your Review</div><div class="value">{{ ns.pending }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">Awaiting HR (Submitted)</div><div class="value">{{ ns.submitted }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">Returned by HR</div><div class="value">{{ ns.returned }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi soft"><div class="card-body"><div class="sub">Finalized (Team)</div><div class="value">{{ ns.finalized }}</div></div></div></div>
     </div>
 
-    <!-- Toolbar -->
     <div class="card soft mb-3">
       <div class="card-body d-flex flex-wrap align-items-center gap-2 toolbar">
         <div class="input-group input-group-sm" style="max-width:320px">
@@ -91,7 +67,6 @@
       </div>
     </div>
 
-    <!-- Tabs (client-side filters) -->
     <ul class="nav nav-pills small mb-2" id="tabPills">
       <li class="nav-item"><a class="nav-link active" data-status="">All</a></li>
       <li class="nav-item"><a class="nav-link" data-status="SUBMITTED_TO_MANAGER">Pending ({{ ns.pending }})</a></li>
@@ -100,7 +75,6 @@
       <li class="nav-item"><a class="nav-link" data-status="APPROVED">Finalized ({{ ns.finalized }})</a></li>
     </ul>
 
-    <!-- Table -->
     <div class="table-responsive">
       <table class="table table-hover align-middle" id="mgrTable">
         <thead>
@@ -117,7 +91,7 @@
           {% for a in appraisals %}
           {% set S = a.status.name if a.status else 'DRAFT' %}
           {% set employee_name = (a.employee.username if a.employee is defined and a.employee else ('ID ' ~ a.employee_id)) %}
-          <tr data-status="{{ S }}" data-name="{{ employee_name|lower }}">
+          <tr id="appraisal-{{ a.id }}" data-status="{{ S }}" data-name="{{ employee_name|lower }}">
             <td class="text-muted">#{{ a.id }}</td>
             <td>{{ employee_name }}</td>
             <td class="text-nowrap">{{ a.period_start }} → {{ a.period_end }}</td>
@@ -138,28 +112,22 @@
                 <a class="btn btn-success" href="{{ a.submit_url or url_for('appraisal.manager_review', appraisal_id=a.id) }}"><i class="bi bi-send-check"></i> Submit to HR</a>
               </div>
 
-              <form method="POST"
-                    action="{{ url_for('appraisal.delete_appraisal', appraisal_id=a.id) }}"
-                    class="d-inline ms-1"
-                    onsubmit="return confirm('Delete appraisal #{{ a.id }} for {{ employee_name }}? This cannot be undone.');">
-                {# If you use CSRF, include your token here: #}
-                {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
-                <button type="submit" class="btn btn-sm btn-outline-danger">
-                  <i class="bi bi-trash"></i> Delete
-                </button>
-              </form>
+              <button type="button" class="btn btn-sm btn-outline-danger ms-1"
+                      data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                      data-action="{{ url_for('appraisal.delete_appraisal', appraisal_id=a.id) }}"
+                      data-employee="{{ employee_name }}"
+                      data-appraisal="{{ a.id }}">
+                <i class="bi bi-trash"></i> Delete
+              </button>
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="6">
-            <div class="empty">Nothing to review.</div>
-          </td></tr>
+          <tr><td colspan="6"><div class="empty">Nothing to review.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
 
-    <!-- Legend -->
     <div class="small text-muted mt-2">
       <span class="status-dot" style="background:#ffc107"></span>Submitted to Manager
       <span class="status-dot" style="background:#0dcaf0;margin-left:10px"></span>Awaiting HR
@@ -171,8 +139,35 @@
   </div>
 </div>
 
+<!-- Delete confirmation (centered) -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-exclamation-triangle me-1"></i> Confirm deletion</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form id="deleteForm" method="post" action="">
+        <div class="modal-body">
+          <p class="mb-2">
+            You’re about to delete <strong>appraisal #<span id="delAppraisalId"></span></strong>
+            for <strong><span id="delEmployeeName"></span></strong>.
+          </p>
+          <div class="small text-muted">This action is permanent and cannot be undone.</div>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Delete permanently</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
-  // client-side filters (search + status)
   const q = document.getElementById('q');
   const statusSel = document.getElementById('statusFilter');
   const rows = Array.from(document.querySelectorAll('#mgrTable tbody tr'));
@@ -196,5 +191,14 @@
     pills.forEach(x=>x.classList.remove('active')); p.classList.add('active'); applyFilters();
   }));
   applyFilters();
+
+  const modalEl = document.getElementById('confirmDeleteModal');
+  modalEl.addEventListener('show.bs.modal', (event) => {
+    const btn = event.relatedTarget;
+    const form = document.getElementById('deleteForm');
+    form.setAttribute('action', btn.getAttribute('data-action'));
+    document.getElementById('delEmployeeName').textContent = btn.getAttribute('data-employee') || 'employee';
+    document.getElementById('delAppraisalId').textContent = btn.getAttribute('data-appraisal') || '';
+  });
 </script>
 {% endblock %}

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Prediction Result</title>
+</head>
+<body>
+  <h1>Prediction Results</h1>
+  <p>{{ prediction_text or "No prediction yet." }}</p>
+  <p>Probability: {{ probability or "N/A" }}</p>
+  <p>Confidence: {{ Confidence or "N/A" }}</p>
+  <p>Risk Level: <span class="text-{{ risk_color }}">{{ risk_label or "N/A" }}</span></p>
+</body>
+</html>

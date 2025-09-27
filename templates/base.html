@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Employee Attrition & Appraisal System{% endblock %}</title>
 
-  <!-- 0) Force theme before CSS loads (prevents half-light/FOUC) -->
+  <!-- Force theme before CSS loads (prevents FOUC) -->
   <script>
     (function () {
       var key = 'eap-theme';
@@ -19,6 +19,7 @@
   </script>
 
   {% block head_extra %}{% endblock %}
+  {% block head %}{% endblock %}
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,15 +34,16 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
   <style>
+    /* ===== THEME TOKENS ===== */
     :root{
       /* Brand */
       --brand:#3b82f6; --brand-2:#22d3ee;
 
-      /* Slightly-dark base (not pitch black) */
-      --bg:#0b1220;           /* page background */
-      --surface:#111827;      /* cards/surfaces */
-      --ink:#e5e7eb;          /* main text */
-      --muted:#9aa4b2;        /* secondary text */
+      /* Base (dark) */
+      --bg:#0b1220;
+      --surface:#111827;
+      --ink:#e5e7eb;
+      --muted:#9aa4b2;
       --line:rgba(148,163,184,.18);
 
       --glass:rgba(17,24,39,.65);
@@ -50,9 +52,20 @@
       --radius:16px;
       --shadow-md:0 10px 24px rgba(2,6,23,.25);
       --shadow-sm:0 6px 18px rgba(2,6,23,.2);
+
+      /* Colored header + stronger sidebar (dark) */
+      --header-bg: linear-gradient(90deg, #1d4ed8 0%, #06b6d4 100%);
+      --header-ink: #ffffff;
+
+      /* Final sidebar look (dark) */
+      --nav-bg: linear-gradient(180deg, rgba(10,23,55,.96) 0%, rgba(5,14,36,.96) 100%);
+      --nav-border: rgba(255,255,255,.08);
+      --nav-ink: rgba(255,255,255,.92);
+      --nav-ink-muted: rgba(255,255,255,.72);
+      --nav-hover: rgba(255,255,255,.12);
+      --nav-active: rgba(59,130,246,.22);
     }
 
-    /* Optional: if user switches to light via the toggle */
     [data-bs-theme="light"]{
       --bg:#f3f6fb;
       --surface:#ffffff;
@@ -61,6 +74,18 @@
       --line:#e6eaf2;
       --glass:rgba(255,255,255,.85);
       --glass-2:rgba(255,255,255,.65);
+
+      /* Colored header + sidebar (light) */
+      --header-bg: linear-gradient(90deg, #1d4ed8 0%, #06b6d4 100%);
+      --header-ink: #ffffff;
+
+      /* Sidebar look (light) */
+      --nav-bg: linear-gradient(180deg, #e9f0ff 0%, #eef7ff 100%);
+      --nav-border: rgba(29,78,216,.25);
+      --nav-ink: #0b1324;
+      --nav-ink-muted: rgba(11,19,36,.72);
+      --nav-hover: rgba(29,78,216,.10);
+      --nav-active: rgba(29,78,216,.16);
     }
 
     html,body{height:100%}
@@ -77,35 +102,74 @@
     /* === Layout: Header + Sidebar + Content === */
     .app-header{
       position:sticky; top:0; z-index:1040;
-      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-      background:linear-gradient(180deg, var(--glass), var(--glass-2));
-      border-bottom:1px solid var(--line);
+      background: var(--header-bg) !important;
+      border-bottom: 0;
+      color: var(--header-ink);
+      box-shadow: 0 8px 24px rgba(2,6,23,.25);
+      backdrop-filter: none; -webkit-backdrop-filter: none;
     }
     .app-header .brand{ display:flex; align-items:center; gap:.65rem; }
     .brand-logo{height:28px}
     .brand-text{font-weight:800; letter-spacing:.3px}
+    /* AFTER */
+.app-header .nav-link,
+.app-header .btn,
+.app-header .dropdown-toggle{ color: var(--header-ink) !important; }
+
+/* Restore normal colors inside the dropdown menu */
+.app-header .dropdown-menu{
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.app-header .dropdown-menu .dropdown-item{
+  color: var(--ink) !important;
+}
+.app-header .dropdown-menu .dropdown-item .bi{
+  color: inherit !important;
+}
+.app-header .dropdown-menu .dropdown-item:hover{
+  background: var(--nav-hover);
+}
+
+    .app-header .nav-link .bi,
+    .app-header .btn .bi{ color: var(--header-ink) !important; }
+    .app-header .nav-link:hover,
+    .app-header .btn:hover{ opacity:.9; }
 
     .sidebar{
-      position:sticky; top:64px; /* header height */
+      position:sticky; top:64px;
       height:calc(100dvh - 64px);
-      border-right:1px solid var(--line);
-      background:linear-gradient(180deg, var(--glass), transparent);
-      backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
-    }
-    .sidebar .nav-link{
-      color:var(--muted);
-      border-radius:10px;
-      display:flex; align-items:center; gap:.6rem;
-      padding:.55rem .75rem;
-    }
-    .sidebar .nav-link .bi{font-size:1rem}
-    .sidebar .nav-link.active, .sidebar .nav-link:hover{
-      color:var(--ink); background:rgba(59,130,246,.16);
+      background: var(--nav-bg) !important;
+      border-right: 1px solid var(--nav-border) !important;
+      box-shadow: inset -1px 0 0 rgba(0,0,0,.08);
+      backdrop-filter: none; -webkit-backdrop-filter: none;
     }
     .sidebar .section-title{
-      font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
-      padding:.75rem .35rem .35rem;
+      color: var(--nav-ink-muted);
+      font-size:.75rem; text-transform:uppercase; letter-spacing:.09em;
+      font-weight:600; padding:.75rem .35rem .35rem;
     }
+    .sidebar .nav-link{
+      color: var(--nav-ink-muted);
+      border-radius:12px;
+      display:flex; align-items:center; gap:.6rem;
+      padding:.6rem .75rem;
+      font-weight:500;
+      transition: background-color .18s ease, color .18s ease, transform .06s ease;
+    }
+    .sidebar .nav-link .bi{ color: currentColor; opacity:.95; font-size:1.05rem; }
+    .sidebar .nav-link:hover, .sidebar .nav-link:focus{
+      color: var(--nav-ink);
+      background: var(--nav-hover);
+      outline:0;
+    }
+    .sidebar .nav-link.active{
+      color: var(--nav-ink);
+      background: var(--nav-active);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset;
+      transform: translateY(-1px);
+    }
+    .sidebar hr{ border-color: var(--nav-border) !important; }
 
     .content-wrap{ padding:1.25rem; }
     @media (min-width: 1200px){ .content-wrap{ padding:2rem 2.25rem; } }
@@ -118,11 +182,16 @@
     .utilbar{ background:transparent; color:var(--muted); font-size:.85rem; border-bottom:1px dashed var(--line); }
     .status-dot{width:.52rem;height:.52rem;border-radius:50%;background:#22c55e;display:inline-block;margin-right:.35rem}
 
-    /* Search */
-    .header-search .form-control{
-      background:transparent; border:1px solid var(--line); color:var(--ink);
+    /* Search in header (works on colored header) */
+    .header-search .input-group-text{
+      background: transparent; color: var(--header-ink); border-color: rgba(255,255,255,.35);
     }
-    .header-search .form-control::placeholder{ color:var(--muted); }
+    .header-search .form-control{
+      background: rgba(255,255,255,.14);
+      border-color: rgba(255,255,255,.35);
+      color: #fff;
+    }
+    .header-search .form-control::placeholder{ color: rgba(255,255,255,.85); }
 
     /* Footer */
     .site-footer{ border-top:1px solid var(--line); background:linear-gradient(180deg, transparent, var(--glass-2)); }
@@ -133,7 +202,7 @@
 
     /* Dropdown polish & modal */
     .dropdown-menu{ border-radius:12px; box-shadow:var(--shadow-sm) }
-    .modal-content{ border-radius:16px }
+    .modal-content{ border-radius:18px } /* overridden by pretty modal below */
 
     /* Badges / buttons */
     .badge-dot{width:.5rem;height:.5rem;border-radius:50%;display:inline-block}
@@ -147,14 +216,43 @@
       border-color: rgba(148,163,184,.25);
       color: var(--ink);
     }
-    [data-bs-theme="dark"] .form-control::placeholder{
-      color: rgba(229,231,235,.55);
+    [data-bs-theme="dark"] .form-control::placeholder{ color: rgba(229,231,235,.55); }
+
+    /* Offcanvas header to match brand (mobile) */
+    .offcanvas.text-bg-dark .offcanvas-header{ background: var(--header-bg); }
+
+    /* ===== Pretty modals ===== */
+    .modal.fade .modal-dialog { transform: translateY(12px); transition: transform .18s ease, opacity .18s ease; }
+    .modal.show .modal-dialog { transform: translateY(0); }
+
+    .modal-content{
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(2,6,23,.35);
+      overflow: hidden;
     }
+    .modal-header{
+      align-items: center; gap:.5rem;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      color: #fff;
+    }
+    .modal-header .btn-close { filter: invert(1) grayscale(1); opacity:.9; }
+    .modal-title{ display:flex; align-items:center; gap:.5rem; font-weight:800; letter-spacing:.2px; }
+    .modal-body{
+      background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 30%), transparent;
+    }
+    .modal-backdrop.show{ backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+    .modal-body h6 { font-weight: 800; }
+    .list-group-item.bg-transparent { background: transparent; border-color: var(--line); }
+    .accordion-button { border-radius: 12px !important; }
+    .accordion-item { background: transparent; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
   </style>
 </head>
 
 <body class="d-flex flex-column">
-  {% set logo_url = url_for('static', filename='images/epas-logo.png') %}
+{% set USER_ROLE = (session.get('role') or 'EMPLOYEE')|upper %}
+{% set logo_url = url_for('static', filename='images/epas-logo.png') %}
 
   <!-- === Super-thin utility strip === -->
   <div class="utilbar">
@@ -164,11 +262,11 @@
         <span class="vr d-none d-md-inline mx-2"></span><span class="d-none d-md-inline">v1.0</span>
       </div>
       <div class="d-none d-sm-flex gap-3 small">
-        <a href="#" class="link-secondary text-decoration-none">Guide</a>
-        <a href="#" class="link-secondary text-decoration-none">Workflow</a>
-        <a href="#" class="link-secondary text-decoration-none">Model</a>
-        <a href="#" class="link-secondary text-decoration-none">FAQ</a>
-        <a href="#" class="link-secondary text-decoration-none">Report</a>
+        <a href="#" class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#guideModal">Guide</a>
+        <a href="#" class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#workflowModal">Workflow</a>
+        <a href="#" class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modelModal">Model</a>
+        <a href="#" class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#faqModal">FAQ</a>
+        <a href="#" class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#reportModal">Report</a>
       </div>
     </div>
   </div>
@@ -196,31 +294,104 @@
 
         <ul class="nav align-items-center gap-1">
           <!-- Notifications -->
-          <li class="nav-item dropdown">
-            <a class="nav-link position-relative px-2" href="#" data-bs-toggle="dropdown" aria-label="Notifications">
-              <i class="bi bi-bell"></i>
-              {% if notif_count and notif_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notif_count }}</span>
-              {% endif %}
-            </a>
-            <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px;max-height:420px;overflow:auto;">
-              <div class="list-group list-group-flush small">
-                {% if notif_items %}
-                  {% for n in notif_items %}
-                    <div class="list-group-item d-flex align-items-start gap-2">
-                      <span class="badge-dot bg-primary mt-2"></span>
-                      <div>
-                        <div class="fw-medium">{{ n.result or "New record" }}</div>
-                        <div class="text-muted">{{ n.timestamp.strftime("%Y-%m-%d %H:%M") }}</div>
-                      </div>
-                    </div>
-                  {% endfor %}
-                {% else %}
-                  <div class="list-group-item text-center text-muted">No new notifications</div>
-                {% endif %}
+<li class="nav-item dropdown">
+  <a class="nav-link position-relative px-2" href="#" data-bs-toggle="dropdown" aria-label="Notifications">
+    <i class="bi bi-bell"></i>
+    {% if notif_count and notif_count > 0 %}
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notif_count }}</span>
+    {% endif %}
+  </a>
+
+  {# ========= Helpers ========= #}
+  {% set ROLE = USER_ROLE %}
+  {% macro label_for(n) -%}
+    {# Prediction (Mgr/HR only) #}
+    {% if n.type == 'prediction' %}
+      {% if n.result in ['Yes','YES','yes', true] %}Prediction · High Attrition Risk
+      {% elif n.result in ['No','NO','no', false] %}Prediction · Low Attrition Risk
+      {% else %}Prediction · Ready{% endif %}
+    {% elif n.type == 'appraisal' %}
+      {% if n.action in ['submitted','SUBMITTED'] %}Appraisal Submitted
+      {% elif n.action in ['approved','APPROVED'] %}Appraisal Approved
+      {% elif n.action in ['not_approved','NOT_APPROVED','rejected','REJECTED'] %}Appraisal Not Approved
+      {% elif n.action in ['returned','RETURNED'] %}Appraisal Returned
+      {% else %}Appraisal Update{% endif %}
+    {% else %}
+      {{ n.title or "Activity" }}
+    {% endif %}
+  {%- endmacro %}
+
+  {% macro dot_for(n) -%}
+    {% if n.type == 'prediction' %}
+      {% if n.result in ['Yes','YES','yes', true] %}bg-danger{% elif n.result in ['No','NO','no', false] %}bg-success{% else %}bg-primary{% endif %}
+    {% elif n.type == 'appraisal' %}
+      {% if n.action in ['approved','APPROVED'] %}bg-success
+      {% elif n.action in ['not_approved','NOT_APPROVED','rejected','REJECTED'] %}bg-danger
+      {% elif n.action in ['returned','RETURNED'] %}bg-warning
+      {% elif n.action in ['submitted','SUBMITTED'] %}bg-info
+      {% else %}bg-primary{% endif %}
+    {% else %}bg-primary{% endif %}
+  {%- endmacro %}
+
+  {# Deep links by role so clicking goes to the exact place #}
+  {% macro href_for(n) -%}
+    {% if n.url %}{{ n.url }}
+    {% elif n.type == 'prediction' %}
+      {# Managers/HR see history; include anchor when run_id available #}
+      {{ url_for('prediction_history') }}{% if n.run_id %}#run-{{ n.run_id }}{% endif %}
+    {% elif n.type == 'appraisal' %}
+      {# Route based on viewer's role #}
+      {% if ROLE == 'MANAGER' %}
+        {{ url_for('appraisals_workspace') }}{% if n.appraisal_id %}#appraisal-{{ n.appraisal_id }}{% endif %}
+      {% elif ROLE == 'HR' %}
+        {{ url_for('hr_review_queue') }}{% if n.appraisal_id %}#appraisal-{{ n.appraisal_id }}{% endif %}
+      {% else %}
+        {# Employee: go to their dashboard or self-appraisal status #}
+        {{ url_for('dashboard') }}{% if n.appraisal_id %}#appraisal-{{ n.appraisal_id }}{% endif %}
+      {% endif %}
+    {% else %}
+      {{ url_for('dashboard') }}
+    {% endif %}
+  {%- endmacro %}
+
+  {# Visibility: Employees see only appraisal; Managers/HR see appraisal + prediction #}
+  {% macro is_visible(n) -%}
+    {% if ROLE in ['MANAGER','HR'] %}
+      {{ n.type in ['appraisal','prediction'] }}
+    {% else %}
+      {{ n.type == 'appraisal' }}
+    {% endif %}
+  {%- endmacro %}
+
+  <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px;max-height:420px;overflow:auto;">
+    <div class="list-group list-group-flush small">
+      {% set any_rendered = false %}
+      {% if notif_items and notif_items|length %}
+        {% for n in notif_items %}
+          {% if is_visible(n) %}
+            {% set any_rendered = true %}
+            <a class="list-group-item d-flex align-items-start gap-2 text-decoration-none position-relative"
+               href="{{ href_for(n) }}">
+              <span class="badge-dot {{ dot_for(n) }} mt-2"></span>
+              <div>
+                <div class="fw-medium">
+                  {{ label_for(n) }}
+                  {% if n.employee_name %}<span class="text-muted"> · {{ n.employee_name }}</span>{% endif %}
+                </div>
+                <div class="text-muted">{{ (n.timestamp or n.created_at).strftime("%Y-%m-%d %H:%M") }}</div>
               </div>
-            </div>
-          </li>
+              <span class="stretched-link" aria-hidden="true"></span>
+            </a>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% if not any_rendered %}
+        <div class="list-group-item text-center text-muted">No new notifications</div>
+      {% endif %}
+    </div>
+  </div>
+</li>
+
 
           <!-- Theme toggle -->
           <li class="nav-item">
@@ -265,7 +436,9 @@
         <nav class="nav flex-column gap-1">
           {% block nav_items %}{% endblock %}
           <div class="dropdown">
-            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-speedometer2"></i> Dashboards</a>
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              <i class="bi bi-grid-1x2"></i> Dashboards
+            </a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">My Dashboard</a></li>
               {% if session.get('role')|lower in ['manager','hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_manager') }}">Manager</a></li>{% endif %}
@@ -283,11 +456,11 @@
 
         <div class="section-title">Resources</div>
         <nav class="nav flex-column gap-1">
-          <a href="#" class="nav-link"><i class="bi bi-journal-text"></i> User Guide</a>
-          <a href="#" class="nav-link"><i class="bi bi-diagram-3"></i> Workflow</a>
-          <a href="#" class="nav-link"><i class="bi bi-cpu"></i> Model</a>
-          <a href="#" class="nav-link"><i class="bi bi-question-circle"></i> FAQ</a>
-          <a href="#" class="nav-link"><i class="bi bi-flag"></i> Report</a>
+          <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#guideModal"><i class="bi bi-journal-text"></i> User Guide</a>
+          <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#workflowModal"><i class="bi bi-diagram-3"></i> Workflow</a>
+          <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#modelModal"><i class="bi bi-cpu"></i> Model</a>
+          <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#faqModal"><i class="bi bi-question-circle"></i> FAQ</a>
+          <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#reportModal"><i class="bi bi-flag"></i> Report</a>
         </nav>
       </aside>
 
@@ -310,20 +483,8 @@
                 <p class="small text-muted mb-0">&copy; {{ current_year }} EAAS · All rights reserved.</p>
               </div>
               <div class="col-lg-4">
-                <div class="fw-bold mb-1">Exports</div>
-                {% if session.get('role')|lower == 'hr' %}
-                <div class="d-flex flex-wrap gap-2">
-                  <a class="btn btn-sm btn-outline-danger" href="{{ url_for('hr_export_pdf') }}">PDF</a>
-                  <a class="btn btn-sm btn-outline-success" href="{{ url_for('hr_export_excel') }}">Excel</a>
-                  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('hr_export_csv') }}">CSV</a>
-                </div>
-                {% else %}
-                <div class="text-muted small">HR-only export tools</div>
-                {% endif %}
-              </div>
-              <div class="col-lg-4">
                 <div class="fw-bold mb-1">Contact</div>
-                <p class="small text-muted mb-1">Support: support@yourdomain.pg</p>
+                <p class="small text-muted mb-1">Support: support@eapas.com</p>
                 <p class="small text-muted">Hours: Mon–Fri, 08:00–17:00</p>
                 <div class="d-flex gap-2">
                   <a class="btn btn-sm btn-outline-secondary" href="#"><i class="bi bi-linkedin"></i></a>
@@ -337,7 +498,7 @@
     </div>
   </div>
 
-  <!-- Mobile Offcanvas: mirrors sidebar; reuses nav_items -->
+  <!-- Mobile Offcanvas -->
   <div class="offcanvas offcanvas-start text-bg-dark" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title d-flex align-items-center gap-2" id="mobileNavLabel">
@@ -356,7 +517,9 @@
       <ul class="navbar-nav">
         {{ self.nav_items() }}
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-speedometer2"></i> Dashboards</a>
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-grid-1x2"></i> Dashboards
+          </a>
           <ul class="dropdown-menu dropdown-menu-dark">
             <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">My Dashboard</a></li>
             {% if session.get('role')|lower in ['manager','hr','admin'] %}<li><a class="dropdown-item" href="{{ url_for('dashboard_manager') }}">Manager</a></li>{% endif %}
@@ -381,7 +544,7 @@
     </div>
   </div>
 
-  <!-- Global Register Modal (ids/names preserved) -->
+  <!-- Global Register Modal -->
   <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg">
@@ -519,6 +682,43 @@
   <!-- Bootstrap -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+  <!-- ===== Modal niceties (after Bootstrap is loaded) ===== -->
+  <script>
+    (function(){
+      // Focus the first focusable control when a modal opens
+      document.addEventListener('shown.bs.modal', (ev) => {
+        const dlg = ev.target;
+        const first = dlg.querySelector('input, select, textarea, button, a[href]');
+        first && first.focus();
+      });
+
+      // Keep ESC from closing while user is typing in a field
+      document.querySelectorAll('.modal').forEach(m => {
+        m.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            const typing = m.querySelector('input:focus, textarea:focus');
+            if (typing) e.stopPropagation();
+          }
+        });
+      });
+
+      // Remember last-opened resource modal and reopen with Ctrl/Cmd + /
+      const RES_KEY='epas:lastModal';
+      document.querySelectorAll('[data-bs-toggle="modal"][data-bs-target]').forEach(a=>{
+        a.addEventListener('click', ()=>localStorage.setItem(RES_KEY, a.getAttribute('data-bs-target')));
+      });
+      window.addEventListener('keydown',(e)=>{
+        const isMac=/Mac|iPod|iPhone|iPad/.test(navigator.platform);
+        if ((isMac?e.metaKey:e.ctrlKey) && e.key === '/') {
+          e.preventDefault();
+          const id = localStorage.getItem(RES_KEY) || '#guideModal';
+          const el = document.querySelector(id);
+          if (el) new bootstrap.Modal(el).show();
+        }
+      });
+    })();
+  </script>
+
   <!-- App Scripts -->
   <script>
     // Elevation/back-to-top
@@ -607,7 +807,7 @@
       });
     })();
 
-    // Demo autofill buttons (backend fields unchanged)
+    // Demo autofill buttons
     (function(){
       const samples = {
         employee: { username: "evelyn.park", email: "evelyn.park@acme.com", password: "EPark#2025!", role: "EMPLOYEE", agree: true,
@@ -682,5 +882,303 @@
 
   <!-- Page-specific scripts -->
   {% block scripts_extra %}{% endblock %}
+
+  <!-- User Guide -->
+  <div class="modal fade" id="guideModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-journal-text me-2"></i>User Guide</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+  {% if USER_ROLE == 'MANAGER' %}
+    <div class="row g-3">
+      <div class="col-md-7">
+        <h6 class="mb-1">Manager Quick Start</h6>
+        <ol class="small">
+          <li>Go to <strong>Dashboards → Manager</strong> for your overview.</li>
+          <li>Use <strong>Appraisals · Workspace</strong> to review, return, or finalize team reviews.</li>
+          <li>Run <strong>Predict</strong> to score an employee; check <strong>History</strong> for past runs.</li>
+          <li>Watch the <strong>High-Risk Watchlist</strong> and follow up with each employee.</li>
+          <li>Export reports (PDF/Excel/CSV) from the Manager dashboard when needed.</li>
+        </ol>
+        <div class="alert alert-info small mb-0">
+          Tip: Filter the <em>Team Predictions</em> table by role or name to focus your follow-ups.
+        </div>
+      </div>
+      <div class="col-md-5">
+        <h6 class="mb-1">Where things live</h6>
+        <ul class="small mb-0">
+          <li><strong>Predict:</strong> score one or many (Batch Upload)</li>
+          <li><strong>History:</strong> confidence, inputs, and details</li>
+          <li><strong>Appraisals:</strong> Pending / Returned / Finalized lanes</li>
+          <li><strong>Exports:</strong> Reports for stakeholders</li>
+        </ul>
+      </div>
+    </div>
+
+  {% elif USER_ROLE == 'HR' %}
+    <div class="row g-3">
+      <div class="col-md-7">
+        <h6 class="mb-1">HR Quick Start</h6>
+        <ol class="small">
+          <li>Open <strong>Dashboards → HR</strong> to see risk, progress, and queues.</li>
+          <li>Use <strong>Operations &amp; Reports</strong> to <em>Define Criteria</em>, <em>Assign Reviewers</em>, and <em>Launch Cycle</em>.</li>
+          <li>Monitor <strong>HR Review Queue</strong>; return items with notes or finalize as needed.</li>
+          <li>Use <strong>Exports</strong> (PDF/Excel/CSV) for compliance and calibration sessions.</li>
+          <li>Correlate <strong>Overtime vs Risk</strong> and <strong>Risk by Tenure/Dept</strong> to plan interventions.</li>
+        </ol>
+        <div class="alert alert-warning small mb-0">
+          Note: Only HR can change appraisal criteria and launch/close cycles.
+        </div>
+      </div>
+      <div class="col-md-5">
+        <h6 class="mb-1">Key areas</h6>
+        <ul class="small mb-0">
+          <li><strong>HR Review:</strong> open / return / finalize</li>
+          <li><strong>Cycle Progress:</strong> status by department</li>
+          <li><strong>Signals:</strong> risk and throughput indicators</li>
+          <li><strong>Predict/History:</strong> bulk or ad-hoc scoring</li>
+        </ul>
+      </div>
+    </div>
+
+  {% else %}
+    <!-- Employee default -->
+    <object data="{{ url_for('static', filename='docs/user_guide.pdf') }}"
+            type="application/pdf" width="100%" style="height:70vh">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <h6>Getting Started</h6>
+          <ol class="small mb-0">
+            <li>Open <strong>Dashboards → My Dashboard</strong>.</li>
+            <li>Click <strong>Start / Continue Self-Appraisal</strong>.</li>
+            <li>Complete each section and submit to your manager.</li>
+          </ol>
+        </div>
+        <div class="col-md-6">
+          <h6>Tips</h6>
+          <ul class="small mb-0">
+            <li>Use <kbd>Ctrl/Cmd + K</kbd> to jump to search.</li>
+            <li>Toggle light/dark in the header.</li>
+            <li>Check status of your appraisal any time.</li>
+          </ul>
+        </div>
+      </div>
+    </object>
+  {% endif %}
+        </div>
+        <div class="modal-footer">
+          <a class="btn btn-outline-secondary" href="{{ url_for('static', filename='docs/user_guide.pdf') }}" download>Download PDF</a>
+          <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workflow -->
+  <div class="modal fade" id="workflowModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-diagram-3 me-2"></i>Workflow</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+  {% if USER_ROLE == 'MANAGER' %}
+    <ol class="list-group list-group-numbered">
+      <li class="list-group-item bg-transparent">Employees submit self-appraisals to you.</li>
+      <li class="list-group-item bg-transparent">You review, add comments, and return if fixes are needed.</li>
+      <li class="list-group-item bg-transparent">Approve and forward to HR when ready.</li>
+      <li class="list-group-item bg-transparent">Monitor <strong>Returned by HR</strong> to address issues promptly.</li>
+      <li class="list-group-item bg-transparent">Use <strong>Predict</strong> + <strong>History</strong> to inform calibration.</li>
+    </ol>
+
+  {% elif USER_ROLE == 'HR' %}
+    <ol class="list-group list-group-numbered">
+      <li class="list-group-item bg-transparent">Define criteria &amp; assign reviewers; launch cycle.</li>
+      <li class="list-group-item bg-transparent">Managers review and submit to HR.</li>
+      <li class="list-group-item bg-transparent">HR audits: return with notes or finalize.</li>
+      <li class="list-group-item bg-transparent">Calibrate ratings across departments.</li>
+      <li class="list-group-item bg-transparent">Export results; communicate outcomes.</li>
+    </ol>
+
+  {% else %}
+    <ol class="list-group list-group-numbered">
+      <li class="list-group-item bg-transparent">Complete self-appraisal and submit to your manager.</li>
+      <li class="list-group-item bg-transparent">Address any returns and re-submit.</li>
+      <li class="list-group-item bg-transparent">Manager approves → HR finalizes.</li>
+      <li class="list-group-item bg-transparent">View your final rating when cycle closes.</li>
+    </ol>
+  {% endif %}
+        </div>
+        <div class="modal-footer">
+          <a href="{{ url_for('dashboard') }}" class="btn btn-primary"><i class="bi bi-rocket-takeoff me-1"></i>Go to Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model -->
+  <div class="modal fade" id="modelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-cpu me-2"></i>Model Overview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-2">This system forecasts attrition risk using factors like tenure, role, performance, satisfaction, and compensation.</p>
+          <ul class="list-group">
+            <li class="list-group-item bg-transparent d-flex justify-content-between">
+              <span>Target</span><span class="fw-semibold">Attrition (Yes/No)</span>
+            </li>
+            <li class="list-group-item bg-transparent d-flex justify-content-between">
+              <span>Outputs</span><span class="fw-semibold">Risk score + key drivers</span>
+            </li>
+            <li class="list-group-item bg-transparent">
+              <div class="fw-semibold mb-1">Role Guidance</div>
+              {% if USER_ROLE == 'MANAGER' %}
+                <div class="small">Use <strong>Predict</strong> for at-risk individuals and <strong>History</strong> before 1:1s and calibration. Coordinate actions with HR.</div>
+              {% elif USER_ROLE == 'HR' %}
+                <div class="small">Run <strong>batch predictions</strong>, validate drivers vs. HR data, and incorporate results into <strong>cycle calibration</strong> and policy.</div>
+              {% else %}
+                <div class="small">Predictions are run by Managers/HR to plan retention and development actions.</div>
+              {% endif %}
+            </li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          {% if session.get('role')|lower in ['manager','hr'] %}
+            <a href="{{ url_for('predict') }}" class="btn btn-primary"><i class="bi bi-magic me-1"></i>Run Prediction</a>
+            <a href="{{ url_for('prediction_history') }}" class="btn btn-outline-secondary">View History</a>
+          {% else %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="modal fade" id="faqModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-question-circle me-2"></i>FAQ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+  {% if USER_ROLE == 'MANAGER' %}
+    <div class="accordion" id="faqAccMgr">
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#m1">How do I return an appraisal?</button></h2>
+        <div id="m1" class="accordion-collapse collapse" data-bs-parent="#faqAccMgr">
+          <div class="accordion-body small">Open <em>Appraisals · Workspace</em> → <strong>Returned by HR</strong> or <strong>Awaiting HR</strong>, choose an item, add notes, and click <strong>Return</strong>.</div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#m2">Where do I see prediction details?</button></h2>
+        <div id="m2" class="accordion-collapse collapse" data-bs-parent="#faqAccMgr">
+          <div class="accordion-body small">Go to <strong>History</strong> and click <strong>Details</strong> to view inputs, confidence, and drivers.</div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#m3">What should I do with high-risk employees?</button></h2>
+        <div id="m3" class="accordion-collapse collapse" data-bs-parent="#faqAccMgr">
+          <div class="accordion-body small">Use the <strong>Watchlist</strong> on the Manager dashboard, coordinate with HR for retention actions, and document outcomes.</div>
+        </div>
+      </div>
+    </div>
+
+  {% elif USER_ROLE == 'HR' %}
+    <div class="accordion" id="faqAccHr">
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#h1">How do I launch a cycle?</button></h2>
+        <div id="h1" class="accordion-collapse collapse" data-bs-parent="#faqAccHr">
+          <div class="accordion-body small">Open <strong>Ops &amp; Reports</strong> → <strong>Launch Cycle</strong>. Make sure criteria and reviewers are configured first.</div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#h2">How do I finalize or return items?</button></h2>
+        <div id="h2" class="accordion-collapse collapse" data-bs-parent="#faqAccHr">
+          <div class="accordion-body small">Use the <strong>HR Review Queue</strong>: open an item, add notes if returning, or click <strong>Finalize</strong> to close.</div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#h3">Where are exports?</button></h2>
+        <div id="h3" class="accordion-collapse collapse" data-bs-parent="#faqAccHr">
+          <div class="accordion-body small">Right rail or <strong>Ops &amp; Reports</strong> header buttons: PDF, Excel, CSV.</div>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="accordion" id="faqAccEmp">
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#e1">How do I start my appraisal?</button></h2>
+        <div id="e1" class="accordion-collapse collapse" data-bs-parent="#faqAccEmp">
+          <div class="accordion-body small">Open <em>My Dashboard</em> and click <strong>Start / Continue Self-Appraisal</strong>.</div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#e2">What if my manager returns it?</button></h2>
+        <div id="e2" class="accordion-collapse collapse" data-bs-parent="#faqAccEmp">
+          <div class="accordion-body small">You’ll get a note. Update the sections requested and re-submit.</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+        </div>
+        <div class="modal-footer">
+          <a class="btn btn-outline-secondary" href="{{ url_for('static', filename='docs/faq.pdf') }}" download>Download FAQ</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report -->
+  <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form onsubmit="event.preventDefault()">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-flag me-2"></i>Report an Issue / Feedback</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Subject</label>
+              <input type="text" class="form-control" id="repSubject" placeholder="Short summary">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Details</label>
+              <textarea class="form-control" id="repDetails" rows="5" placeholder="What happened? Steps to reproduce?"></textarea>
+            </div>
+            <div class="form-text">Or email us directly: <a href="mailto:support@eapas.com?subject=EPAS%20Feedback">support@eapas.com</a></div>
+          </div>
+          <div class="modal-footer">
+            <a id="repMail" class="btn btn-primary" href="#" target="_blank" rel="noopener"><i class="bi bi-send me-1"></i>Send via Email</a>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Turn the Report form into a mailto on the fly (no backend needed)
+    (function(){
+      const btn = document.getElementById('repMail');
+      if(!btn) return;
+      btn.addEventListener('click', function(){
+        const s = encodeURIComponent(document.getElementById('repSubject')?.value || 'EPAS Feedback');
+        const b = encodeURIComponent(document.getElementById('repDetails')?.value || '');
+        this.href = `mailto:support@eapas.com?subject=${s}&body=${b}`;
+      });
+    })();
+  </script>
+{% include "partials/confirm_modal.html" %}
 </body>
 </html>

@@ -1,226 +1,214 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Prediction History</title>
+{# templates/history.html #}
+{% extends "base.html" %}
+{% block title %}Prediction History · EPAS{% endblock %}
 
-  <!-- Bootstrap + Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block head_extra %}
+<style>
+  :root{ --radius:14px; }
+  .page-header{ position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--bs-border-color); background: var(--bs-body-bg); }
+  .stat-card .icon-wrap{ width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background: var(--bs-secondary-bg); }
+  .filter-toolbar{ border: 1px solid var(--bs-border-color); border-radius: var(--radius); padding: .75rem; background: var(--bs-body-bg); }
+  .timeline{ border-radius: var(--radius); overflow: hidden; }
+  .timeline .list-group-item{ background: var(--bs-body-bg); }
+  .badge-soft{ background: color-mix(in oklab, var(--bs-primary) 16%, transparent); color: var(--bs-primary-text-emphasis); border: 1px solid color-mix(in oklab, var(--bs-primary) 30%, transparent); }
+  .badge-soft-success{ background: color-mix(in oklab, var(--bs-success) 18%, transparent); color: var(--bs-success-text-emphasis); border: 1px solid color-mix(in oklab, var(--bs-success) 30%, transparent); }
+  .badge-soft-danger{ background: color-mix(in oklab, var(--bs-danger) 18%, transparent); color: var(--bs-danger-text-emphasis); border: 1px solid color-mix(in oklab, var(--bs-danger) 30%, transparent); }
+  .detail .table>:not(caption)>*>*{ padding:.5rem .6rem; }
+  .empty{ border: 1px dashed var(--bs-border-color); border-radius: var(--radius); background: var(--bs-body-bg); }
+</style>
+{% endblock %}
 
-  <style>
-    :root{
-      --slate-900:#0b1220; --slate-800:#111a2e; --slate-700:#1a2440;
-      --line:#1f2a44; --muted:#94a3b8; --brand:#3b82f6; --good:#16a34a; --bad:#ef4444;
-      --radius:16px; --shadow:0 14px 34px rgba(2,6,23,.35);
-    }
-    body{
-      background:linear-gradient(180deg, var(--slate-900), var(--slate-800));
-      color:#e5e7eb;
-    }
+{% block nav_items %}
+  <a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-house"></i> Overview</a>
+  {% if session.get('role')|lower in ['manager','hr'] %}
+    <a class="nav-link" href="{{ url_for('predict') }}"><i class="bi bi-magic"></i> Predict</a>
+  {% endif %}
+  <a class="nav-link active" href="{{ url_for('prediction_history') }}"><i class="bi bi-clock-history"></i> History</a>
+{% endblock %}
 
-    /* Header (sticky command bar) */
-    .bar{
-      position: sticky; top: 0; z-index: 10;
-      border:1px solid var(--line); border-radius: var(--radius);
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      box-shadow: var(--shadow);
-    }
-    .bar .btn{ border-radius:12px; }
-
-    /* Stats tiles */
-    .tile{
-      background: var(--slate-700); border:1px solid var(--line); border-radius:14px;
-      padding:14px; display:flex; gap:10px; align-items:center; height:100%;
-    }
-    .tile .icon{ width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background: rgba(59,130,246,.15); }
-    .tile .k{ font-size:.8rem; color:var(--muted); font-weight:600; }
-    .tile .v{ font-size:1.4rem; font-weight:800; line-height:1; }
-
-    /* Timeline list */
-    .timeline{
-      border:1px solid var(--line); border-radius: var(--radius); overflow:hidden;
-      background: rgba(255,255,255,.02);
-      box-shadow: var(--shadow);
-    }
-    .t-row{
-      position: relative; padding: 14px 16px; border-bottom:1px solid var(--line);
-      display:flex; gap:14px; align-items:flex-start;
-    }
-    .t-row:last-child{ border-bottom:0; }
-    .t-dot{
-      flex: 0 0 12px; height:12px; border-radius:50%;
-      margin-top:6px; background: var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.18);
-    }
-    .t-badge{
-      border-radius:999px; padding:.25rem .6rem; font-weight:700;
-    }
-    .t-badge.yes{ background:rgba(239,68,68,.2); color:#fecaca; border:1px solid rgba(239,68,68,.35); }
-    .t-badge.no { background:rgba(22,163,74,.2); color:#bbf7d0; border:1px solid rgba(22,163,74,.35); }
-
-    /* Detail card inside collapse */
-    .detail{
-      background: var(--slate-700); border:1px solid var(--line); border-radius:12px; padding:12px;
-    }
-    .detail table{ color:#e5e7eb; }
-    .detail .table>:not(caption)>*>*{ padding:.45rem .6rem; }
-    .detail .table thead th{ color:var(--muted); }
-
-    /* Filters */
-    .filter-chip{ border-radius:999px; }
-    .search input{ background:rgba(255,255,255,.04); border-color:var(--line); color:#e5e7eb; }
-
-    /* Empty state */
-    .empty{
-      border:1px dashed var(--line); border-radius:14px; padding:28px; color:var(--muted);
-      background: rgba(255,255,255,.02);
-    }
-  </style>
-</head>
-<body>
-
-<div class="container-xxl py-4">
-
-  <!-- ===== Sticky command bar ===== -->
-  <div class="bar p-3 mb-3">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+{% block content %}
+  <header class="page-header">
+    <div class="d-flex flex-wrap align-items-center justify-content-between py-3 gap-3">
       <div class="d-flex align-items-center gap-3">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary" style="width:40px;height:40px">
+          <i class="bi bi-clock-history"></i>
+        </div>
         <div>
-          <div class="small text-secondary">Predictions</div>
-          <h1 class="h4 fw-bold m-0">History</h1>
-        </div>
-        <div class="vr d-none d-md-block"></div>
-        <!-- Quick stats -->
-        <div class="d-none d-lg-flex align-items-center gap-2">
-          <div class="tile">
-            <div class="icon text-primary"><i class="bi bi-collection"></i></div>
-            <div><div class="k">Total</div><div class="v">{{ (predictions|length) if predictions else 0 }}</div></div>
-          </div>
-          <div class="tile">
-            <div class="icon text-danger"><i class="bi bi-exclamation-octagon"></i></div>
-            <div><div class="k">Yes</div><div class="v">
-              {{ predictions|selectattr('result','equalto','Yes')|list|length if predictions else 0 }}
-            </div></div>
-          </div>
-          <div class="tile">
-            <div class="icon text-success"><i class="bi bi-shield-check"></i></div>
-            <div><div class="k">No</div><div class="v">
-              {{ predictions|selectattr('result','equalto','No')|list|length if predictions else 0 }}
-            </div></div>
-          </div>
+          <h1 class="h4 mb-0 fw-bold">Prediction History</h1>
+          <div class="text-body-secondary small">Review, search and export past predictions.</div>
         </div>
       </div>
 
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <div class="search input-group input-group-sm me-1">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input id="q" class="form-control" placeholder="Search feature/value…" autocomplete="off">
+      <div class="row g-2 text-nowrap">
+        <div class="col-auto">
+          <div class="stat-card card shadow-sm border-0">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+              <div class="icon-wrap text-primary"><i class="bi bi-collection"></i></div>
+              <div>
+                <div class="text-body-secondary small">Total</div>
+                <div class="fw-bold">{{ (predictions|length) if predictions else 0 }}</div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div class="btn-group btn-group-sm" role="group" aria-label="Filter by result">
-          <button class="btn btn-outline-light filter-chip active" data-filter="all">All</button>
-          <button class="btn btn-outline-danger filter-chip" data-filter="yes"><i class="bi bi-activity"></i> Yes</button>
-          <button class="btn btn-outline-success filter-chip" data-filter="no"><i class="bi bi-check2-circle"></i> No</button>
+        <div class="col-auto">
+          <div class="stat-card card shadow-sm border-0">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+              <div class="icon-wrap text-danger"><i class="bi bi-exclamation-octagon"></i></div>
+              <div>
+                <div class="text-body-secondary small">Yes</div>
+                <div class="fw-bold">
+                  {{ predictions|selectattr('result','equalto','Yes')|list|length if predictions else 0 }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {% if predictions %}
-        <form method="POST" action="{{ url_for('clear_predictions') }}" onsubmit="return confirm('Clear all history?');" class="ms-1">
-          <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
-        </form>
-        {% endif %}
-        <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm ms-1"><i class="bi bi-plus-circle"></i> New Prediction</a>
+        <div class="col-auto">
+          <div class="stat-card card shadow-sm border-0">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+              <div class="icon-wrap text-success"><i class="bi bi-shield-check"></i></div>
+              <div>
+                <div class="text-body-secondary small">No</div>
+                <div class="fw-bold">
+                  {{ predictions|selectattr('result','equalto','No')|list|length if predictions else 0 }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+  </header>
+
+  <!-- ===== Toolbar ===== -->
+  <div class="filter-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div class="input-group input-group-sm" style="min-width:260px;max-width:420px;">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input id="q" class="form-control" placeholder="Search feature/value…" autocomplete="off">
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <div class="btn-group btn-group-sm" role="group" aria-label="Filter by result">
+        <button class="btn btn-outline-secondary active" data-filter="all">All</button>
+        <button class="btn btn-outline-danger" data-filter="yes"><i class="bi bi-activity me-1"></i>Yes</button>
+        <button class="btn btn-outline-success" data-filter="no"><i class="bi bi-check2-circle me-1"></i>No</button>
+      </div>
+
+      {% if predictions %}
+      {% set clear_ep = 'clear_predictions' if session.get('role','').upper() == 'ADMIN' else 'clear_my_predictions' %}
+      <form method="POST"
+            action="{{ url_for(clear_ep) }}"
+            class="d-inline needs-confirm"
+            data-confirm="Clear all prediction history? This cannot be undone."
+            data-action="{{ url_for(clear_ep) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-danger btn-sm" type="submit">
+          <i class="bi bi-trash"></i> Clear All
+        </button>
+      </form>
+      {% endif %}
+
+      <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> New Prediction</a>
     </div>
   </div>
 
   {% if predictions %}
-  <!-- ===== Timeline ===== -->
-  <div class="timeline" id="timeline">
-    {% for pred in predictions %}
-    <div
-      class="t-row"
-      data-result="{{ 'yes' if pred.result|lower == 'yes' else 'no' }}"
-      data-search="{{ (pred.result ~ ' ' ~ pred.confidence ~ ' ' ~ pred.timestamp.strftime('%Y-%m-%d %H:%M:%S') ~ ' ' ~ (pred.input_data|default({})|tojson))|lower }}"
-    >
-      <span class="t-dot"></span>
-      <div class="flex-grow-1">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <span class="t-badge {% if pred.result|lower == 'yes' %}yes{% else %}no{% endif %}">
-              {{ pred.result }}
-            </span>
-            <span class="small text-secondary">Confidence: <strong>{{ pred.confidence }}</strong></span>
+  <div class="card shadow-sm border-0">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Results</span>
+      <span class="small text-body-secondary">Showing <span id="shownCount">{{ predictions|length }}</span> of {{ predictions|length }}</span>
+    </div>
+
+    <div class="list-group list-group-flush timeline">
+      {% for pred in predictions %}
+      <div class="list-group-item py-3"
+           id="run-{{ pred.id }}"
+           data-result="{{ 'yes' if pred.result|lower == 'yes' else 'no' }}"
+           data-search="{{ (pred.result ~ ' ' ~ pred.confidence ~ ' ' ~ pred.timestamp.strftime('%Y-%m-%d %H:%M:%S') ~ ' ' ~ (pred.input_data|default({})|tojson))|lower }}">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div class="d-flex align-items-center gap-3">
+            {% if pred.result|lower == 'yes' %}
+              <span class="badge rounded-pill badge-soft-danger px-3 py-2">Yes</span>
+            {% else %}
+              <span class="badge rounded-pill badge-soft-success px-3 py-2">No</span>
+            {% endif %}
+            <div class="text-body-secondary small">Confidence:
+              <strong class="text-body">{{ pred.confidence }}</strong>
+            </div>
           </div>
-          <div class="small text-secondary"><i class="bi bi-clock-history me-1"></i>{{ pred.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</div>
+
+          <div class="d-flex align-items-center gap-2">
+            <div class="small text-body-secondary"><i class="bi bi-clock me-1"></i>{{ pred.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</div>
+
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#d{{ loop.index }}">
+              <i class="bi bi-caret-down-square"></i> Details
+            </button>
+
+            <form method="POST"
+                  action="{{ url_for('delete_prediction', prediction_id=pred.id) }}"
+                  class="d-inline needs-confirm"
+                  data-confirm="Delete this record? This cannot be undone."
+                  data-action="{{ url_for('delete_prediction', prediction_id=pred.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-danger" type="submit">
+                <i class="bi bi-trash3"></i> Delete
+              </button>
+            </form>
+          </div>
         </div>
 
-        <!-- Controls -->
-        <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
-          <button class="btn btn-sm btn-outline-light" data-bs-toggle="collapse" data-bs-target="#d{{ loop.index }}">
-            <i class="bi bi-caret-down-square"></i> Details
-          </button>
-
-          <!-- Delete single -->
-          <form method="POST" action="{{ url_for('delete_prediction', prediction_id=pred.id) }}" onsubmit="return confirm('Delete this record?');">
-            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i> Delete</button>
-          </form>
-        </div>
-
-        <!-- Collapsible details -->
-        <div id="d{{ loop.index }}" class="collapse mt-2">
-          <div class="detail">
+        <div id="d{{ loop.index }}" class="collapse mt-3">
+          <div class="detail card card-body border-0 bg-body-tertiary">
             {% if pred.input_data %}
-              <h6 class="fw-bold mb-2">Employee Input Data</h6>
+              <h6 class="fw-semibold mb-2">Employee Input Data</h6>
               <div class="table-responsive">
-                <table class="table table-sm table-bordered align-middle">
-                  <thead class="table-dark">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="table-secondary">
                     <tr><th class="w-25">Feature</th><th>Value</th></tr>
                   </thead>
                   <tbody>
-                    {% for key, value in pred.input_data.items() %}
+                  {% for key, value in pred.input_data.items() %}
                     <tr>
-                      <td class="text-secondary small">{{ key }}</td>
+                      <td class="text-body-secondary small">{{ key }}</td>
                       <td class="small">{{ value }}</td>
                     </tr>
-                    {% endfor %}
+                  {% endfor %}
                   </tbody>
                 </table>
               </div>
             {% else %}
-              <p class="text-secondary fst-italic m-0">No input data available.</p>
+              <p class="text-body-secondary fst-italic m-0">No input data available.</p>
             {% endif %}
           </div>
         </div>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
 
-  <!-- ===== Footer actions ===== -->
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
-    <div class="small text-secondary">Showing <span id="shownCount">{{ predictions|length }}</span> of {{ predictions|length }}</div>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-success btn-sm" href="{{ url_for('hr_export_excel') }}"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
-      <a class="btn btn-outline-danger btn-sm" href="{{ url_for('hr_export_pdf') }}"><i class="bi bi-filetype-pdf"></i> Export PDF</a>
-      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('hr_export_csv') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+    <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="small text-body-secondary">End of list</div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-success btn-sm" href="{{ url_for('hr_export_excel') }}"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+        <a class="btn btn-outline-danger btn-sm" href="{{ url_for('hr_export_pdf') }}"><i class="bi bi-filetype-pdf"></i> Export PDF</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('hr_export_csv') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+      </div>
     </div>
   </div>
 
   {% else %}
-    <div class="empty text-center">
-      <div class="display-6 mb-2"><i class="bi bi-inbox"></i></div>
-      <p class="mb-3">No predictions found yet.</p>
-      <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> Make your first prediction</a>
-    </div>
+  <div class="empty text-center p-5">
+    <div class="display-6 mb-2"><i class="bi bi-inbox"></i></div>
+    <p class="mb-3">No predictions found yet.</p>
+    <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> Make your first prediction</a>
+  </div>
   {% endif %}
-</div>
+{% endblock %}
 
+{% block scripts_extra %}
 <script>
-  // Simple client-side filtering & search (no backend changes)
-  const rows = Array.from(document.querySelectorAll('.t-row'));
-  const chips = Array.from(document.querySelectorAll('.filter-chip'));
+  const rows = Array.from(document.querySelectorAll('.list-group-item[data-result]'));
+  const chips = Array.from(document.querySelectorAll('[data-filter]'));
   const shownCount = document.getElementById('shownCount');
   const q = document.getElementById('q');
 
@@ -228,15 +216,15 @@
   let query = '';
 
   function apply(){
-    let shown = 0;
     const qq = (query || '').trim().toLowerCase();
+    let shown = 0;
     rows.forEach(r=>{
       const res = r.dataset.result;
       const hay = r.dataset.search || '';
       const matchFilter = (activeFilter==='all') || (res===activeFilter);
       const matchQuery  = !qq || hay.includes(qq);
       const visible = matchFilter && matchQuery;
-      r.style.display = visible ? '' : 'none';
+      r.classList.toggle('d-none', !visible);
       if(visible) shown++;
     });
     if (shownCount) shownCount.textContent = shown;
@@ -252,9 +240,6 @@
   });
 
   q?.addEventListener('input', (e)=>{ query = e.target.value; apply(); });
-
-  // Initialize
   apply();
 </script>
-</body>
-</html>
+{% endblock %}

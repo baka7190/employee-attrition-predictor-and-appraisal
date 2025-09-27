@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-3">
+<div class="container py-3" id="appraisal-{{ a.id }}">
   <div class="wrap">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <h4 class="mb-0">HR Review — Appraisal #{{ a.id }}</h4>
@@ -61,14 +61,11 @@
             </tbody>
           </table>
         </div>
-        <div class="mt-2">
-          <strong>Total / Avg:</strong> {{ a.total_score or 0 }}{% if avg %}  (avg {{ avg }}){% endif %}
-        </div>
+        <div class="mt-2"><strong>Total / Avg:</strong> {{ a.total_score or 0 }}{% if avg %}  (avg {{ avg }}){% endif %}</div>
       </div>
     </div>
 
     <form method="POST" class="d-flex gap-2">
-      <!-- CSRF token added -->
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" name="action" value="approve" class="btn btn-success">
         <i class="bi bi-check2-circle"></i> Approve

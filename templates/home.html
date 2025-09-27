@@ -193,6 +193,90 @@
       .panel-white{ padding:12px; }
       .instructions-block ol{ font-size:.95rem; }
     }
+    /* === Mobile topbar actions === */
+@media (max-width: 576px){
+  .navbar { margin: 12px 12px 0; }
+  .navbar .container-fluid{ gap:10px; }
+  .navbar .ms-auto{
+    width:100%;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:8px;
+  }
+  .navbar .ms-auto .btn{
+    width:100%;
+    padding:.7rem .9rem;
+    font-size:1rem;
+  }
+  .navbar .ms-auto .link-secondary{
+    display:block;
+    width:100%;
+    text-align:center;
+    padding:.64rem .9rem;
+    border:1px solid #dee2e6;
+    border-radius:.375rem;
+    text-decoration:none !important;
+    color:#495057 !important;
+    background:#f8f9fa;
+  }
+}
+@media (max-width: 576px){
+  .hero{ padding:120px 12px 70px; margin:10px 12px 12px; min-height:300px; }
+  .brand-badge{ --size: 112px; top:14px; }
+  .panels-wrap{ margin:0 12px 6px; }
+  .instructions-block{ margin:12px 12px 6px; padding:10px 10px 0; }
+  .portal-grid{ padding:10px 4px 12px; gap:10px; }
+  .portal-card{ padding:14px; }
+}
+
+
+    /* === Disable cursor-tracking glow on all blocks === */
+.navbar::before,
+.panel-white::before,
+.instructions-block::before,
+.portal-card::before,
+.portal-icon::after{
+  content: none !important;
+  display: none !important;
+}
+
+/* Keep a subtle, non-glowing hover (optional) */
+.navbar:hover,
+.panel-white:hover,
+.instructions-block:hover,
+.portal-card:hover{
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+  border-color: transparent;
+}
+
+    /* === Modal hover glow (no cursor-follow) === */
+.modal .modal-content{
+  --modal-glow: rgba(13,110,253,.55); /* default */
+  transition: transform .2s ease, box-shadow .25s ease;
+  border-radius: .75rem;
+  border: 1px solid rgba(0,0,0,.08);
+}
+.modal .modal-content:is(:hover, :focus-within){
+  transform: translateY(-2px);
+  box-shadow:
+    0 24px 48px rgba(0,0,0,.22),
+    0 0 0 1.5px var(--modal-glow),
+    0 0 40px var(--modal-glow);
+}
+
+
+/* Signup modal: fixed neutral glow */
+#signupModal .modal-content{
+  --modal-glow: rgba(108,117,125,.55); /* bootstrap secondary */
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .modal .modal-content{ transition:none !important; }
+  .modal .modal-content:hover{ transform:none !important; }
+}
+
+
   </style>
 </head>
 <body>
@@ -432,177 +516,192 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Role presets for login modal
-    const rolePresets = {
-      EMPLOYEE:{ title:"Employee Login", header:"bg-primary", btn:"btn-primary", icon:'<i class="bi bi-person-badge"></i>' },
-      MANAGER: { title:"Manager Login",  header:"bg-success", btn:"btn-success", icon:'<i class="bi bi-people"></i>' },
-      HR:      { title:"HR Login",       header:"bg-info",    btn:"btn-info",    icon:'<i class="bi bi-person-lines-fill"></i>' },
-      ADMIN:   { title:"Admin Login",    header:"bg-dark",    btn:"btn-dark",    icon:'<i class="bi bi-gear"></i>' },
+  // ===== Role presets for login modal =====
+  const rolePresets = {
+    EMPLOYEE:{ title:"Employee Login", header:"bg-primary", btn:"btn-primary", icon:'<i class="bi bi-person-badge"></i>' },
+    MANAGER: { title:"Manager Login",  header:"bg-success", btn:"btn-success", icon:'<i class="bi bi-people"></i>' },
+    HR:      { title:"HR Login",       header:"bg-info",    btn:"btn-info",    icon:'<i class="bi bi-person-lines-fill"></i>' },
+    ADMIN:   { title:"Admin Login",    header:"bg-dark",    btn:"btn-dark",    icon:'<i class="bi bi-gear"></i>' },
+  };
+
+  function applyRole(role){
+    const preset = rolePresets[role] || rolePresets.EMPLOYEE;
+
+    // Hidden field value used by backend
+    document.getElementById('expected_role').value = role;
+
+    // Title + icon
+    document.getElementById('loginRoleTitle').textContent = preset.title;
+    document.getElementById('loginRoleIcon').innerHTML = preset.icon;
+
+    // Header color + submit button style
+    const header = document.getElementById('loginModalHeader');
+    header.className = 'modal-header text-white ' + preset.header;
+
+    const btn = document.getElementById('loginSubmitBtn');
+    btn.className = 'btn w-100 ' + preset.btn;
+
+    // Hover glow color on the modal-content
+    const glowMap = {
+      'bg-primary': 'rgba(13,110,253,.55)',
+      'bg-success': 'rgba(25,135,84,.55)',
+      'bg-info':    'rgba(13,202,240,.55)',
+      'bg-dark':    'rgba(33,37,41,.70)'
     };
+    document.querySelector('#loginModal .modal-content')
+      ?.style.setProperty('--modal-glow', glowMap[preset.header] || 'rgba(13,110,253,.55)');
+  }
 
-    function applyRole(role){
-      const preset = rolePresets[role] || rolePresets.EMPLOYEE;
-      document.getElementById('expected_role').value = role;
-      document.getElementById('loginRoleTitle').textContent = preset.title;
-      document.getElementById('loginRoleIcon').innerHTML = preset.icon;
-      const header = document.getElementById('loginModalHeader');
-      header.className = 'modal-header text-white ' + preset.header;
-      const btn = document.getElementById('loginSubmitBtn');
-      btn.className = 'btn w-100 ' + preset.btn;
-      sessionStorage.setItem('lastRole', role);
+  // === 1) Set role ASAP when clicking a trigger (before modal opens)
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('[data-role][data-bs-target="#loginModal"]');
+    if (!trigger) return;
+    const role = (trigger.getAttribute('data-role') || 'EMPLOYEE').toUpperCase();
+    sessionStorage.setItem('lastRole', role);
+    applyRole(role);
+  });
+
+  // === 2) Fallback: when the modal is about to open, ensure role is applied
+  const loginModalEl = document.getElementById('loginModal');
+  loginModalEl?.addEventListener('show.bs.modal', (ev) => {
+    const role =
+      ev.relatedTarget?.getAttribute?.('data-role') ||
+      sessionStorage.getItem('lastRole') ||
+      'EMPLOYEE';
+    applyRole(role);
+  });
+
+  // ===== Signup helpers (unchanged) =====
+  (function(){
+    const form = document.querySelector('#signupModal form.needs-validation');
+    const pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
+    const bar = document.getElementById('pwStrength'), hint = document.getElementById('pwHint');
+    function togglePw(input, btnId){
+      const btn = document.getElementById(btnId), eye = btn.querySelector('i');
+      input.type = (input.type === 'password') ? 'text' : 'password';
+      eye.className = (input.type === 'password') ? 'bi bi-eye' : 'bi bi-eye-slash';
     }
-
-    document.querySelectorAll('[data-role]').forEach(btn => {
-      btn.addEventListener('click', () => applyRole(btn.getAttribute('data-role') || 'EMPLOYEE'));
-    });
-
-    document.getElementById('loginModal')?.addEventListener('show.bs.modal', (ev) => {
-      const r = ev.relatedTarget?.getAttribute?.('data-role')
-             || (new URLSearchParams(location.search).get('open') || '').split('_')[1]?.toUpperCase()
-             || sessionStorage.getItem('lastRole')
-             || 'EMPLOYEE';
-      applyRole(r);
-    });
-
-    // Signup helpers
-    (function(){
-      const form = document.querySelector('#signupModal form.needs-validation');
-      const pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
-      const bar = document.getElementById('pwStrength'), hint = document.getElementById('pwHint');
-      function togglePw(input, btnId){
-        const btn = document.getElementById(btnId), eye = btn.querySelector('i');
-        input.type = (input.type === 'password') ? 'text' : 'password';
-        eye.className = (input.type === 'password') ? 'bi bi-eye' : 'bi bi-eye-slash';
-      }
-      document.getElementById('togglePw1')?.addEventListener('click', ()=>togglePw(pw1,'togglePw1'));
-      document.getElementById('togglePw2')?.addEventListener('click', ()=>togglePw(pw2,'togglePw2'));
-      function updateStrength(){
-        const v = pw1?.value || '';
-        const rules = [/[a-z]/,/[A-Z]/,/\d/,/[^A-Za-z0-9]/,/.{12,}/].map(r=>r.test(v));
-        const score = rules.filter(Boolean).length, pct = (score/5)*100;
-        bar.style.width = pct + '%'; bar.className = 'progress-bar';
-        if (score <= 2) { bar.classList.add('bg-danger'); hint.textContent='Weak'; }
-        else if (score === 3) { bar.classList.add('bg-warning'); hint.textContent='Fair'; }
-        else if (score === 4) { bar.classList.add('bg-info'); hint.textContent='Good'; }
-        else { bar.classList.add('bg-success'); hint.textContent='Strong'; }
-      }
-      pw1?.addEventListener('input', updateStrength);
-      function pwMatch(){ const ok = (pw1.value === pw2.value); pw2.setCustomValidity(ok?'':'Passwords do not match'); return ok; }
-      pw2?.addEventListener('input', pwMatch);
-      const roleSelect = document.getElementById('signupRoleSelect');
-      const empWrap = document.getElementById('employeeFields');
-      const empNames = ['name','employee_id','department','title','manager_name','phone','location'];
-      function updateEmployeeFields(){
-        const isEmp = roleSelect?.value === 'EMPLOYEE';
-        empWrap?.classList.toggle('d-none', !isEmp);
-        empNames.forEach(n=>{
-          const el = document.querySelector(`#signupModal [name="${n}"]`);
-          if (!el) return; if (isEmp) el.setAttribute('required',''); else el.removeAttribute('required');
-        });
-      }
-      roleSelect?.addEventListener('change', updateEmployeeFields);
-      form?.addEventListener('submit', (ev)=>{
-        if (!form.checkValidity() || !pwMatch()) { ev.preventDefault(); ev.stopPropagation(); }
-        form.classList.add('was-validated');
+    document.getElementById('togglePw1')?.addEventListener('click', ()=>togglePw(pw1,'togglePw1'));
+    document.getElementById('togglePw2')?.addEventListener('click', ()=>togglePw(pw2,'togglePw2'));
+    function updateStrength(){
+      const v = pw1?.value || '';
+      const rules = [/[a-z]/,/[A-Z]/,/\d/,/[^A-Za-z0-9]/,/.{12,}/].map(r=>r.test(v));
+      const score = rules.filter(Boolean).length, pct = (score/5)*100;
+      bar.style.width = pct + '%'; bar.className = 'progress-bar';
+      if (score <= 2) { bar.classList.add('bg-danger'); hint.textContent='Weak'; }
+      else if (score === 3) { bar.classList.add('bg-warning'); hint.textContent='Fair'; }
+      else if (score === 4) { bar.classList.add('bg-info'); hint.textContent='Good'; }
+      else { bar.classList.add('bg-success'); hint.textContent='Strong'; }
+    }
+    pw1?.addEventListener('input', updateStrength);
+    function pwMatch(){ const ok = (pw1.value === pw2.value); pw2.setCustomValidity(ok?'':'Passwords do not match'); return ok; }
+    pw2?.addEventListener('input', pwMatch);
+    const roleSelect = document.getElementById('signupRoleSelect');
+    const empWrap = document.getElementById('employeeFields');
+    const empNames = ['name','employee_id','department','title','manager_name','phone','location'];
+    function updateEmployeeFields(){
+      const isEmp = roleSelect?.value === 'EMPLOYEE';
+      empWrap?.classList.toggle('d-none', !isEmp);
+      empNames.forEach(n=>{
+        const el = document.querySelector(`#signupModal [name="${n}"]`);
+        if (!el) return; if (isEmp) el.setAttribute('required',''); else el.removeAttribute('required');
       });
-    })();
+    }
+    roleSelect?.addEventListener('change', updateEmployeeFields);
+    form?.addEventListener('submit', (ev)=>{
+      if (!form.checkValidity() || !pwMatch()) { ev.preventDefault(); ev.stopPropagation(); }
+      form.classList.add('was-validated');
+    });
+  })();
 
-    // Demo autofill
-    (function(){
-      const samples = {
-        employee: { username:"evelyn.park", email:"evelyn.park@acme.com", password:"EPark#2025!", role:"EMPLOYEE", agree:true,
-          details:{ name:"Evelyn Park", employee_id:"E10234", department:"Sales", title:"Sales Associate", manager_name:"Jordan Reed", phone:"512-555-0163", location:"Austin, TX" } },
-        manager:  { username:"marco.lee",  email:"marco.lee@acme.com",  password:"MLee#2025!",  role:"MANAGER", agree:true },
-        hr:       { username:"nina.patel", email:"nina.patel@acme.com", password:"NPatel#2025!", role:"HR", agree:true }
-      };
-      const $form=document.querySelector('#signupModal form.needs-validation'); if(!$form) return;
-      const $user=$form.querySelector('[name="username"]'), $email=$form.querySelector('[name="email"]');
-      const $pw1=$form.querySelector('#pw1'), $pw2=$form.querySelector('#pw2');
-      const $role=$form.querySelector('#signupRoleSelect'), $agree=$form.querySelector('#agree');
-      function setVal(el,v){ if(el){ el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); } }
-      function setChange(el){ if(el){ el.dispatchEvent(new Event('change',{bubbles:true})); } }
-      function fillDetails(d){ if(!d)return; ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{ const el=$form.querySelector(`[name="${n}"]`); if(el && d[n]!==undefined) setVal(el,d[n]); }); }
-      function clearDetails(){ ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{ const el=$form.querySelector(`[name="${n}"]`); if(el) el.value=''; }); }
-      function fillSample(k){
-        const d=samples[k]; if(!d) return; $form.classList.remove('was-validated');
-        setVal($user,d.username); setVal($email,d.email); setVal($pw1,d.password); setVal($pw2,d.password);
-        if($agree){ $agree.checked=!!d.agree; setChange($agree); }
-        if($role){ $role.value=d.role; setChange($role); }
-        if(d.role==='EMPLOYEE') fillDetails(d.details); else clearDetails();
-        $pw1?.dispatchEvent(new Event('input',{bubbles:true}));
-      }
-      document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>btn.addEventListener('click',()=>fillSample(btn.dataset.fill)));
-    })();
+  // ===== Demo autofill (unchanged) =====
+  (function(){
+    const samples = {
+      employee: { username:"evelyn.park", email:"evelyn.park@acme.com", password:"EPark#2025!", role:"EMPLOYEE", agree:true,
+        details:{ name:"Evelyn Park", employee_id:"E10234", department:"Sales", title:"Sales Associate", manager_name:"Jordan Reed", phone:"512-555-0163", location:"Austin, TX" } },
+      manager:  { username:"marco.lee",  email:"marco.lee@acme.com",  password:"MLee#2025!",  role:"MANAGER", agree:true },
+      hr:       { username:"nina.patel", email:"nina.patel@acme.com", password:"NPatel#2025!", role:"HR", agree:true }
+    };
+    const $form=document.querySelector('#signupModal form.needs-validation'); if(!$form) return;
+    const $user=$form.querySelector('[name="username"]'), $email=$form.querySelector('[name="email"]');
+    const $pw1=$form.querySelector('#pw1'), $pw2=$form.querySelector('#pw2');
+    const $role=$form.querySelector('#signupRoleSelect'), $agree=$form.querySelector('#agree');
+    function setVal(el,v){ if(el){ el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); } }
+    function setChange(el){ if(el){ el.dispatchEvent(new Event('change',{bubbles:true})); } }
+    function fillDetails(d){ if(!d)return; ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{ const el=$form.querySelector(`[name="${n}"]`); if(el && d[n]!==undefined) setVal(el,d[n]); }); }
+    function clearDetails(){ ['name','employee_id','department','title','manager_name','phone','location'].forEach(n=>{ const el=$form.querySelector(`[name="${n}"]`); if(el) el.value=''; }); }
+    function fillSample(k){
+      const d=samples[k]; if(!d) return; $form.classList.remove('was-validated');
+      setVal($user,d.username); setVal($email,d.email); setVal($pw1,d.password); setVal($pw2,d.password);
+      if($agree){ $agree.checked=!!d.agree; setChange($agree); }
+      if($role){ $role.value=d.role; setChange($role); }
+      if(d.role==='EMPLOYEE') fillDetails(d.details); else clearDetails();
+      $pw1?.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    document.querySelectorAll('#demoFillers [data-fill]').forEach(btn=>btn.addEventListener('click',()=>fillSample(btn.dataset.fill)));
+  })();
 
-    // Auto-open via ?open=...
-    (function () {
-      const params = new URLSearchParams(location.search);
-      const open = params.get('open');
-      if (!open) return;
+  // ===== Auto-open via ?open=... (fixed) =====
+  (function () {
+    const params = new URLSearchParams(location.search);
+    const open = params.get('open') || '';
+    if (!open) return;
 
-      if (sessionStorage.getItem('openParamConsumed') === '1') {
-        history.replaceState(null, '', location.pathname + (location.hash || ''));
-        return;
-      }
-      sessionStorage.setItem('openParamConsumed', '1');
-
-      const modal = (id) => new bootstrap.Modal(document.getElementById(id));
-      if (open === 'signup' || open === 'register') {
-        modal('signupModal').show();
-      } else if (open.startsWith('login')) {
-        const parts = open.split('_');
-        const role = (parts[1] || '').toUpperCase();
-        if (role) sessionStorage.setItem('lastRole', role);
-        modal('loginModal').show();
-      }
+    // prevent reopening on back/forward
+    if (sessionStorage.getItem('openParamConsumed') === '1') {
       history.replaceState(null, '', location.pathname + (location.hash || ''));
-    })();
+      return;
+    }
+    sessionStorage.setItem('openParamConsumed', '1');
 
-    // Interactive glow for blocks & buttons (and navbar)
-    (function(){
-      const blocks = document.querySelectorAll('.navbar, .panel-white, .instructions-block, .portal-grid .portal-card');
-      blocks.forEach(el=>{
-        el.addEventListener('pointermove', (e)=>{
-          const r = el.getBoundingClientRect();
-          el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-          el.style.setProperty('--my', (e.clientY - r.top) + 'px');
-        });
-      });
+    const show = (id) => new bootstrap.Modal(document.getElementById(id)).show();
 
-      // Make portal card entire area clickable, with ripple
-      document.querySelectorAll('.portal-grid .portal-card').forEach(card=>{
-        const cta = card.querySelector('button[data-bs-toggle="modal"]');
-        card.tabIndex = 0;
-        card.addEventListener('click', (e)=>{ if (!e.target.closest('button')) cta?.click(); });
-        card.addEventListener('keydown', (e)=>{ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); cta?.click(); }});
-        card.addEventListener('pointerdown', (e)=>{
-          const r = card.getBoundingClientRect();
-          const s = document.createElement('span');
-          const size = Math.max(r.width, r.height);
-          s.className = 'ripple';
-          s.style.width = s.style.height = size + 'px';
-          s.style.left = (e.clientX - r.left - size/2) + 'px';
-          s.style.top  = (e.clientY - r.top  - size/2) + 'px';
-          card.appendChild(s);
-          setTimeout(()=>s.remove(), 700);
-        });
-      });
+    if (open === 'signup' || open === 'register') {
+      show('signupModal');
+    } else if (open.startsWith('login')) {
+      const role = (open.split('_')[1] || 'EMPLOYEE').toUpperCase();
+      sessionStorage.setItem('lastRole', role);
+      applyRole(role);
+      show('loginModal');
+    }
+    history.replaceState(null, '', location.pathname + (location.hash || ''));
+  })();
 
-      // Button ripple
-      document.addEventListener('pointerdown', (e)=>{
-        const btn = e.target.closest('.btn');
-        if(!btn) return;
-        const r = btn.getBoundingClientRect();
+  // ===== Ripple effects (unchanged) =====
+  (function(){
+    document.querySelectorAll('.portal-grid .portal-card').forEach(card=>{
+      const cta = card.querySelector('button[data-bs-toggle="modal"]');
+      card.tabIndex = 0;
+      card.addEventListener('click', (e)=>{ if (!e.target.closest('button')) cta?.click(); });
+      card.addEventListener('keydown', (e)=>{ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); cta?.click(); }});
+      card.addEventListener('pointerdown', (e)=>{
+        const r = card.getBoundingClientRect();
         const s = document.createElement('span');
         const size = Math.max(r.width, r.height);
         s.className = 'ripple';
         s.style.width = s.style.height = size + 'px';
         s.style.left = (e.clientX - r.left - size/2) + 'px';
         s.style.top  = (e.clientY - r.top  - size/2) + 'px';
-        btn.appendChild(s);
-        setTimeout(()=>s.remove(), 600);
+        card.appendChild(s);
+        setTimeout(()=>s.remove(), 700);
       });
-    })();
-  </script>
+    });
+
+    document.addEventListener('pointerdown', (e)=>{
+      const btn = e.target.closest('.btn');
+      if(!btn) return;
+      const r = btn.getBoundingClientRect();
+      const s = document.createElement('span');
+      const size = Math.max(r.width, r.height);
+      s.className = 'ripple';
+      s.style.width = s.style.height = size + 'px';
+      s.style.left = (e.clientX - r.left - size/2) + 'px';
+      s.style.top  = (e.clientY - r.top  - size/2) + 'px';
+      btn.appendChild(s);
+      setTimeout(()=>s.remove(), 600);
+    });
+  })();
+</script>
+
 </body>
 </html>
